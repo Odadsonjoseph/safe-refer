@@ -11,20 +11,25 @@ export const auth = betterAuth({
   emailAndPassword: { enabled: true },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
-      const { sendEmail } = await import("./services/email");
-      await sendEmail({
-        to: user.email,
-        subject: "Verify your Safe Refer email",
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-            <h2 style="color: #0EA5E9;">Verify your email</h2>
-            <p>Hi ${user.name},</p>
-            <p>Click the link below to verify your email address:</p>
-            <a href="${url}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Verify Email</a>
-            <p style="color:#94A3B8;font-size:12px;margin-top:24px;">If you didn't create an account, you can ignore this email.</p>
-          </div>
-        `,
-      });
+      try {
+        const { sendEmail } = await import("./services/email");
+        await sendEmail({
+          to: user.email,
+          subject: "Verify your Safe Refer email",
+          html: `
+            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+              <h2 style="color: #0EA5E9;">Verify your email</h2>
+              <p>Hi ${user.name},</p>
+              <p>Click the link below to verify your email address:</p>
+              <a href="${url}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Verify Email</a>
+              <p style="color:#94A3B8;font-size:12px;margin-top:24px;">If you didn't create an account, you can ignore this email.</p>
+            </div>
+          `,
+        });
+      } catch (e) {
+        console.error("[auth] Failed to send verification email:", e);
+        // Don't throw — email failure should not block signup
+      }
     },
   },
   secret: process.env.BETTER_AUTH_SECRET,
