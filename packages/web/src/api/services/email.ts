@@ -21,7 +21,7 @@ export async function sendEmail({ to, subject, text, html, replyTo }: SendEmailO
     subject,
     text,
     html,
-    replyTo,
+    ...(replyTo ? { replyTo } : {}),
   });
 
   if (error) throw new Error(`Email failed: ${error.message}`);

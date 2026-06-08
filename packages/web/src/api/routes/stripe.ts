@@ -29,7 +29,7 @@ export const stripeRouter = new Hono<AppEnv>()
       await db.update(schema.users).set({ stripeAccountId: accountId }).where(eq(schema.users.id, user.id));
     }
 
-    const link = await stripe.accountLinks.create({
+    const link = await getStripe().accountLinks.create({
       account: accountId,
       refresh_url: `${process.env.WEBSITE_URL}/payments?refresh=1`,
       return_url: `${process.env.WEBSITE_URL}/payments?success=1`,

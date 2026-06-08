@@ -60,11 +60,11 @@ export const usersRouter = new Hono<AppEnv>()
       .reduce((acc, s) => acc + (s.payoutAmount ?? 0), 0);
 
     const pendingPayout = allSubs
-      .filter((s) => s.status === "approved" && s.paymentStatus !== "transferred" && s.paymentStatus !== "fully_paid")
+      .filter((s) => s.status === "accepted" && s.paymentStatus !== "transferred" && s.paymentStatus !== "fully_paid")
       .reduce((acc, s) => acc + (s.payoutAmount ?? 0), 0);
 
-    const closedDeals = allSubs.filter((s) => s.status === "closed" || s.status === "paid").length;
-    const approvedLeads = allSubs.filter((s) => s.status === "approved").length;
+    const closedDeals = allSubs.filter((s) => s.status === "closed").length;
+    const approvedLeads = allSubs.filter((s) => s.status === "accepted").length;
 
     const [referrer] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
 

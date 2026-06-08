@@ -10,7 +10,7 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
   emailAndPassword: { enabled: true },
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
+    sendVerificationEmail: async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
       const { sendEmail } = await import("./services/email");
       await sendEmail({
         to: user.email,
@@ -28,7 +28,7 @@ export const auth = betterAuth({
     },
   },
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: (request) => {
+  trustedOrigins: (request: Request) => {
     const origin = request?.headers.get("origin");
     return origin ? [origin] : ["*"];
   },
@@ -36,7 +36,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        async after(user) {
+        async after(user: { email: string; name: string; id: string }) {
           try {
             const { sendEmail } = await import("./services/email");
             await sendEmail({
