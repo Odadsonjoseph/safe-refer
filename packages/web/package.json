@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@better-auth/expo": "1.4.22",
+    "@neondatabase/serverless": "^1.1.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@runablehq/website-runtime": "^0.10.0",
     "@tanstack/react-query": "^5.100.6",
