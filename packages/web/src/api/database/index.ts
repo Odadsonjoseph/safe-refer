@@ -4,13 +4,12 @@ import * as schema from "./schema";
 
 const connectionString = process.env.DATABASE_URL!;
 
-// postgres-js handles Supabase pooler connections better than pg
-// max: 1 is important for serverless (Vercel) to avoid connection exhaustion
+// postgres-js with serverless-safe settings
 const client = postgres(connectionString, {
   ssl: "require",
   max: 1,
   idle_timeout: 20,
-  connect_timeout: 30,
+  connect_timeout: 10, // fail fast so we get real error, not timeout
   prepare: false, // required for transaction pooler (port 6543)
 });
 
