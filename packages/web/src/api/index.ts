@@ -43,8 +43,10 @@ const app = new Hono()
   // Webhooks — raw body needed before basePath
   .route("/webhooks", webhooksRouter)
   .basePath("api")
-  .use("*", authMiddleware)
+  // Health check — no auth middleware needed
   .get("/health", (c) => c.json({ status: "ok" }, 200))
+  // All other routes go through auth middleware
+  .use("*", authMiddleware)
   .route("/users", usersRouter)
   .route("/listings", listings)
   .route("/submissions", submissions)
