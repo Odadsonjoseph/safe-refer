@@ -1,9 +1,12 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import * as schema from "./schema";
 
-// @neondatabase/serverless is ESM-native and works with Vercel's esbuild bundler.
-// It uses the same postgres wire protocol as pg but without CJS dynamic requires.
-const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+// Using pg with ESM default import — works with Vercel's CJS bundling
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL!,
+  ssl: { rejectUnauthorized: false },
+  max: 1,
+});
 
 export const db = drizzle(pool, { schema });
