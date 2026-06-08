@@ -1,28 +1,31 @@
-import { handle } from "hono/vercel";
 import { Hono } from "hono";
+import { handle } from "hono/vercel";
 
 export const config = {
   runtime: "nodejs",
 };
 
-let _app: Hono | null = null;
+// Isolate health check first — no app module import
+const healthApp = new Hono();
+healthApp.get("/api/health", (c) => c.json({ status: "ok", ts: Date.now() }));
 
-function getApp(): Hono {
-  if (_app) return _app;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const mod = require("../src/api/index");
-    _app = mod.default ?? mod;
-    return _app!;
-  } catch (err) {
-    console.error("[safe-refer] Failed to load app module:", err);
-    const fallback = new Hono();
-    fallback.all("*", (c) => c.json({ error: "Module load failed", detail: String(err) }, 500));
-    return fallback;
-  }
+// Lazy-load the full app only for non-health routes
+let _fullHandler: ((req: Request) => Response | Promise<Response>) | null = null;
+
+async function getFullHandler() {
+  if (_fullHandler) return _fullHandler;
+  const { default: app } = await import("../src/api/index");
+  _fullHandler = handle(app);
+  return _fullHandler;
 }
 
-export default function handler(req: Request) {
-  const app = getApp();
-  return handle(app)(req);
+export default async function handler(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  // Fast path: health check without loading heavy modules
+  if (url.pathname === "/api/health") {
+    return Response.json({ status: "ok", ts: Date.now() });
+  }
+  // Load full app lazily
+  const h = await getFullHandler();
+  return h(req);
 }
