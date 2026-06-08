@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["./index.ts", "../src/api/**/*"]
+}

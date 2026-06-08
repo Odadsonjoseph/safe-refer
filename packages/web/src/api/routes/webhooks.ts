@@ -4,7 +4,7 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, sql } from "drizzle-orm";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-05-28.basil" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
 
 export const webhooksRouter = new Hono()
   .post("/stripe", async (c) => {

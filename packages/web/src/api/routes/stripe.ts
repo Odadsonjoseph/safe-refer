@@ -5,7 +5,7 @@ import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-05-28.basil" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
 
 export const stripeRouter = new Hono()
   // Create Stripe Connect onboarding link (referrers)
