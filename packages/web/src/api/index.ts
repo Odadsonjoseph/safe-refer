@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { sql } from "drizzle-orm";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/auth";
 import { listings } from "./routes/listings";
@@ -24,6 +25,16 @@ const app = new Hono()
   .basePath("api")
   // Health check — no auth middleware needed
   .get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200))
+  // Temp DB connectivity test
+  .get("/dbtest", async (c) => {
+    try {
+      const { db } = await import("./database");
+      const result = await db.execute(sql`SELECT current_database() as db, now() as ts`);
+      return c.json({ ok: true, rows: result.rows });
+    } catch (err: any) {
+      return c.json({ ok: false, error: err?.message || String(err) }, 500);
+    }
+  })
   // All other routes go through auth middleware
   .use("*", authMiddleware)
   .route("/users", usersRouter)
