@@ -9,27 +9,6 @@ import { adminRouter } from "./routes/admin";
 import { stripeRouter } from "./routes/stripe";
 import { webhooksRouter } from "./routes/webhooks";
 
-// Background job: enforce expired payment deadlines
-import { db } from "./database";
-import * as schema from "./database/schema";
-import { eq, lt, and } from "drizzle-orm";
-
-function enforceExpiredDeadlines() {
-  const now = new Date();
-  db.update(schema.submissions)
-    .set({ status: "forfeited", paymentStatus: "forfeited", updatedAt: now })
-    .where(
-      and(
-        eq(schema.submissions.status, "accepted"),
-        eq(schema.submissions.paymentStatus, "unpaid"),
-        lt(schema.submissions.paymentDeadline, now)
-      )
-    )
-    .then(() => {})
-    .catch((e) => console.error("deadline job error", e));
-}
-setInterval(enforceExpiredDeadlines, 5 * 60 * 1000);
-
 const app = new Hono()
   .use(
     cors({
@@ -44,7 +23,7 @@ const app = new Hono()
   .route("/webhooks", webhooksRouter)
   .basePath("api")
   // Health check — no auth middleware needed
-  .get("/health", (c) => c.json({ status: "ok" }, 200))
+  .get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200))
   // All other routes go through auth middleware
   .use("*", authMiddleware)
   .route("/users", usersRouter)
