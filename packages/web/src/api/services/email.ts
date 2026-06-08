@@ -15,14 +15,16 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail({ to, subject, text, html, replyTo }: SendEmailOptions) {
-  const { data, error } = await getResend().emails.send({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const payload: any = {
     from: "Safe Refer <refer@safesky.my>",
     to: Array.isArray(to) ? to : [to],
     subject,
-    text,
-    html,
+    ...(html ? { html } : {}),
+    ...(text ? { text } : {}),
     ...(replyTo ? { replyTo } : {}),
-  });
+  };
+  const { data, error } = await getResend().emails.send(payload);
 
   if (error) throw new Error(`Email failed: ${error.message}`);
   return data;
