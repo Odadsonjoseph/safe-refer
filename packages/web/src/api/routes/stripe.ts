@@ -5,7 +5,11 @@ import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
+let _stripe: Stripe | null = null;
+function getStripe() {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
+  return _stripe;
+}
 
 export const stripeRouter = new Hono()
   // Create Stripe Connect onboarding link (referrers)
@@ -15,7 +19,7 @@ export const stripeRouter = new Hono()
 
     let accountId = profile?.stripeAccountId;
     if (!accountId) {
-      const account = await stripe.accounts.create({
+      const account = await getStripe().accounts.create({
         type: "express",
         email: user.email,
         capabilities: { transfers: { requested: true } },
@@ -39,7 +43,7 @@ export const stripeRouter = new Hono()
     const [profile] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
     if (!profile?.stripeAccountId) return c.json({ connected: false, payoutEnabled: false }, 200);
 
-    const account = await stripe.accounts.retrieve(profile.stripeAccountId);
+    const account = await getStripe().accounts.retrieve(profile.stripeAccountId);
     const payoutEnabled = account.payouts_enabled ?? false;
 
     if (payoutEnabled !== profile.payoutEnabled) {
@@ -62,7 +66,7 @@ export const stripeRouter = new Hono()
 
     const amountCents = Math.round((submission.payoutAmount ?? listing.payoutAmount) * 100);
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: amountCents,
       currency: "usd",
       metadata: { submissionId, listingId: listing.id, referrerId: submission.referrerId },

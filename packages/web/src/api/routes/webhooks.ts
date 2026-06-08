@@ -4,7 +4,11 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, sql } from "drizzle-orm";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
+let _stripe: Stripe | null = null;
+function getStripe() {
+  if (!_stripe) _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" });
+  return _stripe;
+}
 
 export const webhooksRouter = new Hono()
   .post("/stripe", async (c) => {
@@ -13,7 +17,7 @@ export const webhooksRouter = new Hono()
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
+      event = getStripe().webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch (err: any) {
       return c.json({ error: `Webhook Error: ${err.message}` }, 400);
     }
@@ -37,7 +41,7 @@ export const webhooksRouter = new Hono()
       try {
         const [referrer] = await db.select().from(schema.users).where(eq(schema.users.id, referrerId)) as any[];
         if (referrer?.stripeAccountId && referrer?.payoutEnabled) {
-          const transfer = await stripe.transfers.create({
+          const transfer = await getStripe().transfers.create({
             amount: pi.amount,
             currency: "usd",
             destination: referrer.stripeAccountId,
