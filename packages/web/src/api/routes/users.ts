@@ -1,13 +1,14 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, and, sum } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
-export const usersRouter = new Hono()
+export const usersRouter = new Hono<AppEnv>()
   // Get current user profile
   .get("/me", requireAuth, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const [profile] = await db
       .select()
       .from(schema.users)
@@ -17,7 +18,7 @@ export const usersRouter = new Hono()
   })
   // Update profile
   .patch("/me", requireAuth, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const body = await c.req.json();
 
     const allowed = [
@@ -48,7 +49,7 @@ export const usersRouter = new Hono()
   })
   // Get earnings summary (referrers)
   .get("/earnings", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const allSubs = await db
       .select()
       .from(schema.submissions)
@@ -84,7 +85,7 @@ export const usersRouter = new Hono()
   })
   // Submit application
   .post("/me/submit-application", requireAuth, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
     if (!current) return c.json({ error: "User not found" }, 404);
     if (current.applicationStatus !== "incomplete") {

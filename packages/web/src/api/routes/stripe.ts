@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types";
 import Stripe from "stripe";
 import { db } from "../database";
 import * as schema from "../database/schema";
@@ -11,10 +12,10 @@ function getStripe() {
   return _stripe;
 }
 
-export const stripeRouter = new Hono()
+export const stripeRouter = new Hono<AppEnv>()
   // Create Stripe Connect onboarding link (referrers)
   .post("/connect/onboard", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const [profile] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
 
     let accountId = profile?.stripeAccountId;
@@ -39,7 +40,7 @@ export const stripeRouter = new Hono()
   })
   // Check Connect account status
   .get("/connect/status", requireAuth, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const [profile] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
     if (!profile?.stripeAccountId) return c.json({ connected: false, payoutEnabled: false }, 200);
 
@@ -54,7 +55,7 @@ export const stripeRouter = new Hono()
   })
   // Create payment intent for a submission (poster pays)
   .post("/pay/:submissionId", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const { submissionId } = c.req.param();
 
     const [submission] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, submissionId));

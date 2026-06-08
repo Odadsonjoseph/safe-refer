@@ -1,10 +1,11 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
-export const listings = new Hono()
+export const listings = new Hono<AppEnv>()
   // Public: browse all active listings
   .get("/", requireAuth, requireApproved, async (c) => {
     const rows = await db
@@ -26,7 +27,7 @@ export const listings = new Hono()
   })
   // Poster: create listing
   .post("/", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const body = await c.req.json();
     const [listing] = await db
       .insert(schema.listings)
@@ -48,7 +49,7 @@ export const listings = new Hono()
   })
   // Poster: update listing
   .patch("/:id", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const { id } = c.req.param();
     const [existing] = await db.select().from(schema.listings).where(eq(schema.listings.id, id));
     if (!existing) return c.json({ error: "Not found" }, 404);
@@ -63,7 +64,7 @@ export const listings = new Hono()
   })
   // My listings (poster)
   .get("/mine/all", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const rows = await db
       .select()
       .from(schema.listings)

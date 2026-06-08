@@ -1,14 +1,15 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 import { sendEmail, submissionStatusEmail } from "../services/email";
 
-export const submissions = new Hono()
+export const submissions = new Hono<AppEnv>()
   // Submit a referral
   .post("/", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const body = await c.req.json();
 
     const [listing] = await db
@@ -55,7 +56,7 @@ export const submissions = new Hono()
   })
   // My submissions (referrer)
   .get("/mine", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const rows = await db
       .select()
       .from(schema.submissions)
@@ -65,7 +66,7 @@ export const submissions = new Hono()
   })
   // Get one submission
   .get("/:id", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const { id } = c.req.param();
     const [submission] = await db
       .select()
@@ -81,7 +82,7 @@ export const submissions = new Hono()
   })
   // Poster: update submission status
   .patch("/:id/status", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const { id } = c.req.param();
     const body = await c.req.json();
 
@@ -112,7 +113,7 @@ export const submissions = new Hono()
   })
   // Submissions for a listing (poster view)
   .get("/listing/:listingId", requireAuth, requireApproved, async (c) => {
-    const user = c.get("user") as any;
+    const user = c.get("user")!;
     const { listingId } = c.req.param();
     const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, listingId));
     if (!listing) return c.json({ error: "Not found" }, 404);

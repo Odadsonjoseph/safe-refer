@@ -1,11 +1,12 @@
 import { Hono } from "hono";
+import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, desc, count } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { sendEmail, applicationStatusEmail } from "../services/email";
 
-export const adminRouter = new Hono()
+export const adminRouter = new Hono<AppEnv>()
   // Stats overview
   .get("/stats", requireAuth, requireAdmin, async (c) => {
     const [userCount] = await db.select({ count: count() }).from(schema.users);
