@@ -72,3 +72,8 @@ scripts/
 !packages/mobile/scripts/
 packages/mobile/scripts/*
 !packages/mobile/scripts/generate-ios-certs.py
+.env.git
+.env.vercel
+.env.supabase
+.env.supabase.direct
+.env.supabase*
