@@ -64,6 +64,7 @@
       "name": "@template/web",
       "dependencies": {
         "@better-auth/expo": "1.4.22",
+        "@neondatabase/serverless": "^1.1.0",
         "@radix-ui/react-slot": "^1.2.4",
         "@runablehq/website-runtime": "^0.10.0",
         "@tanstack/react-query": "^5.100.6",
@@ -75,6 +76,7 @@
         "hono": "^4.12.10",
         "lucide-react": "^0.577.0",
         "pg": "^8.21.0",
+        "postgres": "^3.4.9",
         "react": "19.1.0",
         "react-dom": "19.1.0",
         "react-hook-form": "^7.71.2",
@@ -596,6 +598,8 @@
     "@malept/flatpak-bundler": ["@malept/flatpak-bundler@0.4.0", "", { "dependencies": { "debug": "^4.1.1", "fs-extra": "^9.0.0", "lodash": "^4.17.15", "tmp-promise": "^3.0.2" } }, "sha512-9QOtNffcOF/c1seMCDnjckb3R9WHcG34tky+FHpNKKCW0wc/scYLwMtO+ptyGUfMW0/b/n4qRiALlaFHc9Oj7Q=="],
 
     "@neon-rs/load": ["@neon-rs/load@0.0.4", "", {}, "sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw=="],
+
+    "@neondatabase/serverless": ["@neondatabase/serverless@1.1.0", "", {}, "sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q=="],
 
     "@noble/ciphers": ["@noble/ciphers@2.2.0", "", {}, "sha512-Z6pjIZ/8IJcCGzb2S/0Px5J81yij85xASuk1teLNeg75bfT07MV3a/O2Mtn1I2se43k3lkVEcFaR10N4cgQcZA=="],
 
