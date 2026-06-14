@@ -1,6 +1,4 @@
 import { createAuthClient } from "better-auth/react";
-import { expoClient } from "@better-auth/expo/client";
-import { useEffect, useState } from "react";
 
 export const TOKEN_KEY = "safe_refer_token";
 
@@ -11,7 +9,6 @@ export function getToken(): string {
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
-  plugins: [expoClient()],
   fetchOptions: {
     auth: {
       type: "Bearer",
