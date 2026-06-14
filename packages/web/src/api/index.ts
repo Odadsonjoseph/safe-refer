@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { sql } from "drizzle-orm";
 import { auth } from "./auth";
 import { authMiddleware } from "./middleware/auth";
 import { listings } from "./routes/listings";
@@ -9,6 +8,7 @@ import { usersRouter } from "./routes/users";
 import { adminRouter } from "./routes/admin";
 import { stripeRouter } from "./routes/stripe";
 import { webhooksRouter } from "./routes/webhooks";
+import { sql } from "drizzle-orm";
 
 const app = new Hono()
   .use(
