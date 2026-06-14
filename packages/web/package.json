@@ -27,6 +27,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
+    "esbuild": "^0.28.1",
     "hono": "^4.12.10",
     "lucide-react": "^0.577.0",
     "postgres": "^3.4.9",
