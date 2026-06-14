@@ -16,6 +16,15 @@ export default defineConfig(({ mode }) => {
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "./src/web"),
+				"react-native": "react-native-web",
+			},
+		},
+		optimizeDeps: {
+			exclude: ["react-native", "@better-auth/expo", "expo-modules-core"],
+		},
+		build: {
+			rollupOptions: {
+				external: (id) => id.includes("expo-modules-core") || id.includes("@better-auth/expo"),
 			},
 		},
 		server: {

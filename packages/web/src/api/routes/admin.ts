@@ -48,7 +48,11 @@ export const adminRouter = new Hono<AppEnv>()
   .patch("/applications/:userId", requireAuth, requireAdmin, async (c) => {
     const { userId } = c.req.param();
     const body = await c.req.json();
-    const status = body.status as "approved" | "rejected";
+    // Support both { status: "approved" } and { action: "approve" } formats
+    let status = body.status as "approved" | "rejected";
+    if (!status && body.action) {
+      status = body.action === "approve" ? "approved" : "rejected";
+    }
 
     const [user] = await db
       .update(schema.users)

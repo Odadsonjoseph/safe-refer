@@ -2,6 +2,7 @@ import { Route, Switch, Redirect } from "wouter";
 import { Provider } from "./components/provider";
 import { AgentFeedback } from "@runablehq/website-runtime";
 import { useAuth } from "./lib/auth";
+import { useQuery } from "@tanstack/react-query";
 
 import SignIn from "./pages/sign-in";
 import SignUp from "./pages/sign-up";
@@ -14,6 +15,39 @@ import Submissions from "./pages/submissions";
 import Earnings from "./pages/earnings";
 import Admin from "./pages/admin";
 
+function LoadingSpinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+function useProfile() {
+  const { user, loading: authLoading } = useAuth();
+  const profile = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      const res = await fetch("/api/users/me", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("safe_refer_token") ?? ""}`,
+        },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.user ?? null;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  return {
+    authUser: user,
+    profile: profile.data,
+    loading: authLoading || (!!user && profile.isLoading),
+  };
+}
+
 function ProtectedRoute({
   component: Component,
   adminOnly = false,
@@ -21,35 +55,30 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  const { user, loading } = useAuth();
+  const { authUser, profile, loading } = useProfile();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+  if (loading) return <LoadingSpinner />;
+  if (!authUser) return <Redirect to="/sign-in" />;
+  if (adminOnly && !profile?.isAdmin) return <Redirect to="/dashboard" />;
+
+  // If profile not approved yet and not admin, send to pending
+  if (
+    !profile?.isAdmin &&
+    profile?.applicationStatus &&
+    profile.applicationStatus !== "approved" &&
+    profile.applicationStatus !== "incomplete"
+  ) {
+    return <Redirect to="/pending" />;
   }
-
-  if (!user) return <Redirect to="/sign-in" />;
-  if (adminOnly && user.role !== "admin") return <Redirect to="/dashboard" />;
-  if (user.role !== "admin" && user.status === "pending") return <Redirect to="/pending" />;
 
   return <Component />;
 }
 
 function GuestRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, loading } = useAuth();
+  const { authUser, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-8 h-8 border-2 border-sky-400 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (user) return <Redirect to="/dashboard" />;
+  if (loading) return <LoadingSpinner />;
+  if (authUser) return <Redirect to="/dashboard" />;
   return <Component />;
 }
 

@@ -7,7 +7,6 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"referrer" | "poster" | "both">("referrer");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -15,20 +14,33 @@ export default function SignUpPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = await authClient.signUp.email(
-      { name, email, password },
-      { onSuccess: captureToken }
-    );
-    setLoading(false);
-    if (res.error) {
-      setError(res.error.message ?? "Sign up failed");
-    } else {
-      navigate("/onboarding");
+
+    try {
+      const res = await authClient.signUp.email(
+        { name, email, password },
+        {
+          onSuccess: captureToken,
+          onError: (ctx) => {
+            setError(ctx.error?.message ?? "Sign up failed. Please try again.");
+          },
+        }
+      );
+
+      if (res.error) {
+        setError(res.error.message ?? "Sign up failed. Please try again.");
+      } else {
+        navigate("/onboarding");
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <div className="min-h-screen bg-white flex">
+      {/* Left panel */}
       <div className="hidden lg:flex flex-col justify-between w-96 bg-sky-500 p-12">
         <div>
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mb-8">
@@ -38,10 +50,27 @@ export default function SignUpPage() {
           <p className="text-sky-100 mt-4 text-base leading-relaxed">
             Connect companies with warm leads and earn when deals close.
           </p>
+          <div className="mt-8 space-y-4">
+            {[
+              "Browse open referral listings",
+              "Submit warm leads in seconds",
+              "Get paid automatically when deals close",
+            ].map((item) => (
+              <div key={item} className="flex items-start gap-3">
+                <div className="w-5 h-5 bg-sky-400 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <span className="text-sky-100 text-sm">{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <p className="text-sky-200 text-sm">© 2025 Safe Refer. All rights reserved.</p>
       </div>
 
+      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
@@ -89,26 +118,11 @@ export default function SignUpPage() {
                 className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">I want to…</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["referrer", "poster", "both"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`py-2 px-1 rounded-lg text-xs font-semibold border transition-colors ${
-                      role === r
-                        ? "bg-sky-500 text-white border-sky-500"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-sky-300"
-                    }`}
-                  >
-                    {r === "referrer" ? "Refer Leads" : r === "poster" ? "Post Listings" : "Both"}
-                  </button>
-                ))}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            )}
             <button
               type="submit"
               disabled={loading}

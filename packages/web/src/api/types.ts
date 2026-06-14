@@ -1,12 +1,15 @@
-// Shared Hono environment type for the entire app
 export type UserSession = {
   id: string;
   name: string;
   email: string;
+  emailVerified?: boolean;
+  image?: string;
+  // Extended fields from `users` profile table (populated via databaseHooks)
   isAdmin?: boolean;
-  applicationStatus?: string;
-  role?: string;
+  applicationStatus?: "incomplete" | "submitted" | "approved" | "rejected";
+  role?: "poster" | "referrer" | "both";
   companyName?: string;
+  phone?: string;
   [key: string]: any;
 };
 

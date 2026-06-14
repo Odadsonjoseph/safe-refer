@@ -13,15 +13,27 @@ export default function SignInPage() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = await authClient.signIn.email(
-      { email, password },
-      { onSuccess: captureToken }
-    );
-    setLoading(false);
-    if (res.error) {
-      setError(res.error.message ?? "Sign in failed");
-    } else {
-      navigate("/dashboard");
+
+    try {
+      const res = await authClient.signIn.email(
+        { email, password },
+        {
+          onSuccess: captureToken,
+          onError: (ctx) => {
+            setError(ctx.error?.message ?? "Sign in failed. Please check your credentials.");
+          },
+        }
+      );
+
+      if (res.error) {
+        setError(res.error.message ?? "Sign in failed. Please check your credentials.");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -77,7 +89,11 @@ export default function SignInPage() {
                 className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
               />
             </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
             <button
               type="submit"
               disabled={loading}

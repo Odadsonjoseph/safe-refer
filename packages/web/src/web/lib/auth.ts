@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/react";
+import { expoClient } from "@better-auth/expo/client";
 import { useEffect, useState } from "react";
-import { api } from "./api";
 
 export const TOKEN_KEY = "safe_refer_token";
 
@@ -11,6 +11,7 @@ export function getToken(): string {
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
+  plugins: [expoClient()],
   fetchOptions: {
     auth: {
       type: "Bearer",
@@ -32,29 +33,25 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "poster" | "referrer" | "admin";
-  status: "pending" | "approved" | "rejected";
+  emailVerified: boolean;
+  image?: string;
+  // extended from users table
+  role?: "poster" | "referrer" | "both";
+  isAdmin?: boolean;
+  applicationStatus?: "incomplete" | "submitted" | "approved" | "rejected";
+  companyName?: string;
+  phone?: string;
+  [key: string]: any;
 };
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending: loading } = authClient.useSession();
 
-  useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    (api.users.me.$get() as Promise<Response>)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: any) => {
-        if (data?.user) setUser(data.user);
-        else clearToken();
-      })
-      .catch(() => clearToken())
-      .finally(() => setLoading(false));
-  }, []);
+  const user = session?.user as AuthUser | null | undefined;
 
-  return { user, loading, setUser };
+  return {
+    user: user ?? null,
+    loading,
+    session,
+  };
 }

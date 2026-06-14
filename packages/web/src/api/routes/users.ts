@@ -2,21 +2,44 @@ import { Hono } from "hono";
 import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
-import { eq, and, sum } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
 export const usersRouter = new Hono<AppEnv>()
-  // Get current user profile
+  // Get current user profile — requireAuth only (not requireApproved, so pending users can still load their profile)
   .get("/me", requireAuth, async (c) => {
     const user = c.get("user")!;
     const [profile] = await db
       .select()
       .from(schema.users)
       .where(eq(schema.users.id, user.id));
-    if (!profile) return c.json({ error: "User not found" }, 404);
+
+    if (!profile) {
+      // Profile doesn't exist yet — create it (race condition safety)
+      const [newProfile] = await db
+        .insert(schema.users)
+        .values({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          emailVerified: false,
+          role: "referrer",
+          isAdmin: false,
+          applicationStatus: "incomplete",
+          payoutEnabled: false,
+          w9Completed: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoNothing()
+        .returning();
+      return c.json({ user: newProfile }, 200);
+    }
+
     return c.json({ user: profile }, 200);
   })
-  // Update profile
+
+  // Update profile — requireAuth only
   .patch("/me", requireAuth, async (c) => {
     const user = c.get("user")!;
     const body = await c.req.json();
@@ -33,7 +56,6 @@ export const usersRouter = new Hono<AppEnv>()
     }
     updates.updatedAt = new Date();
 
-    // If profile is complete enough, move to submitted
     const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
     if (current?.applicationStatus === "incomplete" && body.phone && body.w9Completed) {
       updates.applicationStatus = "submitted";
@@ -47,7 +69,24 @@ export const usersRouter = new Hono<AppEnv>()
 
     return c.json({ user: updated }, 200);
   })
-  // Get earnings summary (referrers)
+
+  // Submit application — requireAuth only (pending users can submit their app)
+  .post("/me/submit-application", requireAuth, async (c) => {
+    const user = c.get("user")!;
+    const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
+    if (!current) return c.json({ error: "User not found" }, 404);
+    if (current.applicationStatus !== "incomplete") {
+      return c.json({ error: "Application already submitted" }, 400);
+    }
+    const [updated] = await db
+      .update(schema.users)
+      .set({ applicationStatus: "submitted", updatedAt: new Date() })
+      .where(eq(schema.users.id, user.id))
+      .returning();
+    return c.json({ user: updated }, 200);
+  })
+
+  // Earnings summary (approved referrers only)
   .get("/earnings", requireAuth, requireApproved, async (c) => {
     const user = c.get("user")!;
     const allSubs = await db
@@ -68,33 +107,8 @@ export const usersRouter = new Hono<AppEnv>()
 
     const [referrer] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
 
-    const history = allSubs
-      .filter((s) => s.paymentStatus === "transferred" || s.paymentStatus === "fully_paid")
-      .map((s) => ({
-        id: s.id,
-        amount: s.payoutAmount ?? 0,
-        paidAt: s.updatedAt,
-        listingTitle: s.listingId, // will be enriched below
-      }));
-
     return c.json({
       stats: { totalEarned, pendingPayout, closedDeals, approvedLeads },
-      history,
       payoutEnabled: referrer?.payoutEnabled ?? false,
     }, 200);
-  })
-  // Submit application
-  .post("/me/submit-application", requireAuth, async (c) => {
-    const user = c.get("user")!;
-    const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
-    if (!current) return c.json({ error: "User not found" }, 404);
-    if (current.applicationStatus !== "incomplete") {
-      return c.json({ error: "Application already submitted" }, 400);
-    }
-    const [updated] = await db
-      .update(schema.users)
-      .set({ applicationStatus: "submitted", updatedAt: new Date() })
-      .where(eq(schema.users.id, user.id))
-      .returning();
-    return c.json({ user: updated }, 200);
   });
