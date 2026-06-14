@@ -1,24 +1,23 @@
 import { createMiddleware } from "hono/factory";
-import { auth } from "../auth";
-import type { AppEnv } from "../types";
-import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
+import type { AppEnv } from "../types";
+
+// schema and eq are pure definitions — no DB connection, safe to import statically
 
 export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   try {
+    const { auth } = await import("../auth");
+    const { db } = await import("../database");
+
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session?.user) {
-      // Enrich with profile data from `users` table
       try {
         const [profile] = await db
           .select()
           .from(schema.users)
           .where(eq(schema.users.id, session.user.id));
-        // Merge profile fields into user
-        const enriched = profile
-          ? { ...session.user, ...profile }
-          : session.user;
+        const enriched = profile ? { ...session.user, ...profile } : session.user;
         c.set("user", enriched as any);
       } catch {
         c.set("user", session.user as any);
