@@ -2,16 +2,15 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins";
 import * as schema from "./database/schema";
+import { getDb } from "./database";
 
 type Auth = ReturnType<typeof betterAuth>;
 
-// Lazy singleton — betterAuth() + drizzleAdapter() are expensive at init
+// Lazy singleton — betterAuth() + drizzleAdapter() are expensive; don't init at module load
 let _auth: Auth | null = null;
 
 export function getAuth(): Auth {
   if (!_auth) {
-    // Import db lazily so no connection happens at module load
-    const { getDb } = require("./database") as typeof import("./database");
     const db = getDb();
 
     _auth = betterAuth({

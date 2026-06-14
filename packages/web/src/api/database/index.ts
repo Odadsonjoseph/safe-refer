@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
 
-// Lazy singleton — connection only established on first call to getDb()
+// Lazy singleton — connection only established on first property access
 let _db: DrizzleDB | null = null;
 
 export function getDb(): DrizzleDB {
@@ -22,13 +22,9 @@ export function getDb(): DrizzleDB {
   return _db;
 }
 
-// Typed proxy — all routes that import `db` directly still work
-// Property access is forwarded to the lazy singleton
+// Typed proxy so existing `import { db }` usage still works with correct types
 export const db: DrizzleDB = new Proxy({} as DrizzleDB, {
   get(_target, prop, receiver) {
     return Reflect.get(getDb() as object, prop, receiver);
-  },
-  apply(_target, thisArg, args) {
-    return Reflect.apply(getDb() as unknown as Function, thisArg, args);
   },
 });
