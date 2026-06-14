@@ -1,7 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins";
-import { expo } from "@better-auth/expo";
 import { db } from "./database";
 import { db as dbImport } from "./database";
 import * as schema from "./database/schema";
@@ -21,7 +20,7 @@ export const auth = betterAuth({
     // Allow all origins — Vercel previews, production, and local
     return origin ? [origin, "*"] : ["*"];
   },
-  plugins: [bearer(), expo()],
+  plugins: [bearer()],
   databaseHooks: {
     user: {
       create: {
