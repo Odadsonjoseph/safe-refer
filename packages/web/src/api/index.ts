@@ -30,7 +30,7 @@ const app = new Hono()
     try {
       const { db } = await import("./database");
       const result = await db.execute(sql`SELECT current_database() as db, now() as ts`);
-      return c.json({ ok: true, rows: result.rows });
+      return c.json({ ok: true, rows: result as any });
     } catch (err: any) {
       return c.json({ ok: false, error: err?.message || String(err) }, 500);
     }
