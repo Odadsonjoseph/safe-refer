@@ -1,17 +1,14 @@
 import { drizzle } from "drizzle-orm/postgres-js";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import type * as schema from "./schema";
+import postgres from "postgres";
+import * as schema from "./schema";
 
-// Lazy singleton — no connection is made until first call to getDb()
-let _db: PostgresJsDatabase<typeof import("./schema")> | null = null;
+type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
 
-export function getDb() {
+// Lazy singleton — connection only established on first call to getDb()
+let _db: DrizzleDB | null = null;
+
+export function getDb(): DrizzleDB {
   if (!_db) {
-    // Only import and connect when actually needed
-    const postgres = require("postgres");
-    const { drizzle: drizzleInit } = require("drizzle-orm/postgres-js");
-    const schemaModule = require("./schema");
-
     const connectionString = process.env.DATABASE_URL!;
     const client = postgres(connectionString, {
       ssl: "require",
@@ -20,15 +17,18 @@ export function getDb() {
       connect_timeout: 10,
       prepare: false,
     });
-    _db = drizzleInit(client, { schema: schemaModule });
+    _db = drizzle(client, { schema });
   }
   return _db;
 }
 
-// Keep named `db` export as a lazy proxy so existing imports don't break
-// Any property access or method call triggers the real connection
-export const db = new Proxy({} as ReturnType<typeof getDb>, {
-  get(_target, prop) {
-    return (getDb() as any)[prop];
+// Typed proxy — all routes that import `db` directly still work
+// Property access is forwarded to the lazy singleton
+export const db: DrizzleDB = new Proxy({} as DrizzleDB, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDb() as object, prop, receiver);
+  },
+  apply(_target, thisArg, args) {
+    return Reflect.apply(getDb() as unknown as Function, thisArg, args);
   },
 });

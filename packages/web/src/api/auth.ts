@@ -3,12 +3,15 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer } from "better-auth/plugins";
 import * as schema from "./database/schema";
 
-// Lazy singleton — betterAuth() is heavy and connects to DB at init
-let _auth: ReturnType<typeof betterAuth> | null = null;
+type Auth = ReturnType<typeof betterAuth>;
 
-export function getAuth() {
+// Lazy singleton — betterAuth() + drizzleAdapter() are expensive at init
+let _auth: Auth | null = null;
+
+export function getAuth(): Auth {
   if (!_auth) {
-    const { getDb } = require("./database");
+    // Import db lazily so no connection happens at module load
+    const { getDb } = require("./database") as typeof import("./database");
     const db = getDb();
 
     _auth = betterAuth({
@@ -29,7 +32,6 @@ export function getAuth() {
         user: {
           create: {
             async after(user: { email: string; name: string; id: string }) {
-              // Create profile in our `users` table
               try {
                 await db.insert(schema.users).values({
                   id: user.id,
@@ -48,7 +50,6 @@ export function getAuth() {
                 console.error("[auth] Failed to create user profile:", e);
               }
 
-              // Send welcome email (non-blocking)
               try {
                 const { sendEmail } = await import("./services/email");
                 await sendEmail({
@@ -75,9 +76,9 @@ export function getAuth() {
   return _auth;
 }
 
-// Keep named `auth` export for backward compatibility — lazy proxy
-export const auth = new Proxy({} as ReturnType<typeof getAuth>, {
-  get(_target, prop) {
-    return (getAuth() as any)[prop];
+// Typed proxy for backward-compatible `auth` named export
+export const auth: Auth = new Proxy({} as Auth, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getAuth() as object, prop, receiver);
   },
 });

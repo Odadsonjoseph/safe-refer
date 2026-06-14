@@ -1,15 +1,14 @@
 import { createMiddleware } from "hono/factory";
+import { auth } from "../auth";
+import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
 import type { AppEnv } from "../types";
 
-// schema and eq are pure definitions — no DB connection, safe to import statically
+// auth and db are lazy proxies — importing them here is safe (no connection at import time)
 
 export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   try {
-    const { auth } = await import("../auth");
-    const { db } = await import("../database");
-
     const session = await auth.api.getSession({ headers: c.req.raw.headers });
     if (session?.user) {
       try {
