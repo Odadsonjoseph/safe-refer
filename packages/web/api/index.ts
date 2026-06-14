@@ -1,9 +1,12 @@
+import { Hono } from "hono";
+import { handle } from "hono/vercel";
+
 export const config = {
   runtime: "nodejs",
 };
 
-export default function handler(req: Request) {
-  return new Response(JSON.stringify({ status: "ok", ts: Date.now() }), {
-    headers: { "content-type": "application/json" },
-  });
-}
+const app = new Hono().basePath("/api");
+
+app.get("/health", (c) => c.json({ status: "ok", ts: Date.now() }));
+
+export default handle(app);
