@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_GJE33XuzXB5a8tEKqMtGvNPGEWcf",
+  "orgId": "team_42aWRSSE138kgvU8wzAZAkSb",
+  "projectName": "safe-refer",
+  "settings": {
+    "createdAt": 1780915769009,
+    "framework": "vite",
+    "devCommand": null,
+    "installCommand": "bun install",
+    "buildCommand": "bun run build",
+    "outputDirectory": "dist",
+    "rootDirectory": "packages/web",
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
