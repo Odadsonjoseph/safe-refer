@@ -77,3 +77,6 @@ packages/mobile/scripts/*
 .env.supabase
 .env.supabase.direct
 .env.supabase*
+
+packages/web/.vercel/output
+packages/web/.vercel/.env.*
