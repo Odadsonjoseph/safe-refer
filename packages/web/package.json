@@ -6,7 +6,7 @@
     ".": "./src/api/index.ts"
   },
   "scripts": {
-    "build": "tsc --noEmit && vite build && bun scripts/build-api.ts",
+    "build": "tsc --noEmit && vite build && bun ./scripts/build-api.ts",
     "dev": "vite",
     "start": "bun src/server.ts",
     "typecheck": "tsc --noEmit",
