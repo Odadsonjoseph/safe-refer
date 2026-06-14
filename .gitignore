@@ -72,6 +72,10 @@ scripts/
 !packages/mobile/scripts/
 packages/mobile/scripts/*
 !packages/mobile/scripts/generate-ios-certs.py
+# Allow web build scripts
+!packages/web/scripts/
+packages/web/scripts/*
+!packages/web/scripts/build-api.ts
 .env.git
 .env.vercel
 .env.supabase
