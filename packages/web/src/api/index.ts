@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { auth } from "./auth";
 import { authMiddleware } from "./middleware/auth";
 import { listings } from "./routes/listings";
 import { submissions } from "./routes/submissions";
@@ -18,14 +17,17 @@ const app = new Hono()
       exposeHeaders: ["set-auth-token"],
     })
   )
-  // Auth — must be before basePath
-  .on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw))
+  // Auth — lazy import so betterAuth() + drizzleAdapter() don't run at module load
+  .on(["GET", "POST"], "/api/auth/*", async (c) => {
+    const { auth } = await import("./auth");
+    return auth.handler(c.req.raw);
+  })
   // Webhooks — raw body needed before basePath
   .route("/webhooks", webhooksRouter)
   .basePath("api")
   // Health check — no auth middleware needed
   .get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200))
-  // Temp DB connectivity test
+  // DB connectivity test
   .get("/dbtest", async (c) => {
     try {
       const { db } = await import("./database");
