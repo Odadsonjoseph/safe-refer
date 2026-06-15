@@ -63,14 +63,14 @@ export const stripeRouter = new Hono<AppEnv>()
 
     const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
     if (!listing) return c.json({ error: "Listing not found" }, 404);
-    if (listing.posterId !== user.id) return c.json({ error: "Forbidden" }, 403);
+    if (listing.businessId !== user.id) return c.json({ error: "Forbidden" }, 403);
 
     const amountCents = Math.round((submission.payoutAmount ?? listing.payoutAmount) * 100);
 
     const paymentIntent = await getStripe().paymentIntents.create({
       amount: amountCents,
       currency: "usd",
-      metadata: { submissionId, listingId: listing.id, referrerId: submission.referrerId },
+      metadata: { submissionId, listingId: listing.id, referrerId: submission.affiliateId },
     });
 
     await db

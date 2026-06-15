@@ -108160,12 +108160,12 @@ var stripeRouter = new Hono2().post("/connect/onboard", requireAuth, requireAppr
   if (!submission) return c.json({ error: "Submission not found" }, 404);
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
   if (!listing) return c.json({ error: "Listing not found" }, 404);
-  if (listing.posterId !== user2.id) return c.json({ error: "Forbidden" }, 403);
+  if (listing.businessId !== user2.id) return c.json({ error: "Forbidden" }, 403);
   const amountCents = Math.round((submission.payoutAmount ?? listing.payoutAmount) * 100);
   const paymentIntent = await getStripe().paymentIntents.create({
     amount: amountCents,
     currency: "usd",
-    metadata: { submissionId, listingId: listing.id, referrerId: submission.referrerId }
+    metadata: { submissionId, listingId: listing.id, referrerId: submission.affiliateId }
   });
   await db.update(submissions).set({ stripePaymentIntentId: paymentIntent.id, updatedAt: /* @__PURE__ */ new Date() }).where(eq(submissions.id, submissionId));
   return c.json({ clientSecret: paymentIntent.client_secret }, 200);

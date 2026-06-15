@@ -7,7 +7,7 @@ export type UserSession = {
   // Extended fields from `users` profile table (populated via databaseHooks)
   isAdmin?: boolean;
   applicationStatus?: "incomplete" | "submitted" | "approved" | "rejected";
-  role?: "poster" | "referrer" | "both";
+  role?: "affiliate" | "business" | "admin";
   companyName?: string;
   phone?: string;
   [key: string]: any;
