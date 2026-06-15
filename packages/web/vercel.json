@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/compiled.mjs": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/compiled" },
     { "source": "/((?!api).*)", "destination": "/index.html" }
