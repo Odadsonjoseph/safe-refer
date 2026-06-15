@@ -2,9 +2,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
 import { DashboardLayout } from "../components/layout";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useState } from "react";
-import { Plus, MapPin, DollarSign, Building2 } from "lucide-react";
+import { Plus, MapPin, Building2, ChevronRight } from "lucide-react";
 
 export default function ListingsPage() {
   const { data: session } = authClient.useSession();
@@ -24,7 +24,7 @@ export default function ListingsPage() {
             <h1 className="text-2xl font-bold text-slate-900">Listings</h1>
             <p className="text-slate-500 text-sm mt-1">Browse referral opportunities</p>
           </div>
-          {(user?.role === "poster" || user?.role === "both") && (
+          {(user?.role === "poster" || user?.role === "both" || user?.isAdmin) && (
             <button
               onClick={() => setShowCreate(true)}
               className="flex items-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors"
@@ -47,9 +47,11 @@ export default function ListingsPage() {
             <ListingCard key={l.id} listing={l} />
           ))}
           {!listings.isLoading && !(listings.data as any)?.listings?.length && (
-            <div className="text-center py-16 text-slate-400">
-              <ListChecksIcon />
-              <p className="mt-3 text-sm">No listings available right now.</p>
+            <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Building2 size={20} className="text-slate-400" />
+              </div>
+              <p className="text-sm text-slate-400">No listings available right now.</p>
             </div>
           )}
         </div>
@@ -61,24 +63,37 @@ export default function ListingsPage() {
 function ListingCard({ listing }: { listing: any }) {
   return (
     <Link href={`/listings/${listing.id}`}>
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:border-sky-300 hover:shadow-md transition-all cursor-pointer">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:border-sky-300 hover:shadow-md transition-all cursor-pointer group">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">{listing.industry}</span>
-              <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{listing.dealType}</span>
+            <div className="flex items-center gap-2 mb-2">
+              {listing.industry && (
+                <span className="text-xs font-semibold text-sky-600 bg-sky-50 px-2 py-0.5 rounded-full">{listing.industry}</span>
+              )}
+              {listing.dealType && (
+                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{listing.dealType}</span>
+              )}
             </div>
             <h3 className="font-semibold text-slate-900 mb-1">{listing.title}</h3>
             <p className="text-sm text-slate-500 line-clamp-2">{listing.description}</p>
             <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
-              <span className="flex items-center gap-1"><Building2 size={12} />{listing.posterCompany ?? listing.posterName}</span>
-              {listing.location && <span className="flex items-center gap-1"><MapPin size={12} />{listing.location}</span>}
+              {(listing.posterCompany || listing.posterName) && (
+                <span className="flex items-center gap-1">
+                  <Building2 size={12} />{listing.posterCompany ?? listing.posterName}
+                </span>
+              )}
+              {listing.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin size={12} />{listing.location}
+                </span>
+              )}
             </div>
           </div>
-          <div className="text-right flex-shrink-0">
-            <p className="text-xl font-bold text-sky-600">${listing.payoutAmount.toFixed(0)}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{listing.payoutTrigger}</p>
-            <p className="text-xs text-slate-400 mt-1">{listing.totalSubmissions} referrals</p>
+          <div className="text-right flex-shrink-0 flex flex-col items-end gap-1">
+            <p className="text-xl font-bold text-sky-600">${listing.payoutAmount?.toFixed(0)}</p>
+            <p className="text-xs text-slate-400">{listing.payoutTrigger}</p>
+            <p className="text-xs text-slate-400">{listing.totalSubmissions ?? 0} referrals</p>
+            <ChevronRight size={16} className="text-slate-300 group-hover:text-sky-400 transition-colors mt-1" />
           </div>
         </div>
       </div>
@@ -97,8 +112,13 @@ function CreateListingModal({ onClose }: { onClose: () => void }) {
   const create = useMutation({
     mutationFn: async () => {
       const res = await api.listings.$post({
-        json: { ...form, payoutAmount: parseFloat(form.payoutAmount), payoutDeadlineDays: parseInt(form.payoutDeadlineDays) },
+        json: {
+          ...form,
+          payoutAmount: parseFloat(form.payoutAmount),
+          payoutDeadlineDays: parseInt(form.payoutDeadlineDays),
+        },
       });
+      if (!res.ok) throw new Error("Failed to create listing");
       return res.json();
     },
     onSuccess: () => {
@@ -107,12 +127,18 @@ function CreateListingModal({ onClose }: { onClose: () => void }) {
     },
   });
 
-  const F = ({ label, name, placeholder, type = "text" }: any) => (
+  const F = ({ label, name, placeholder, type = "text", required = false }: any) => (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input type={type} value={(form as any)[name]} onChange={(e) => update(name, e.target.value)}
+      <label className="block text-sm font-medium text-slate-700 mb-1">
+        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
+      <input
+        type={type}
+        value={(form as any)[name]}
+        onChange={(e) => update(name, e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+      />
     </div>
   );
 
@@ -120,14 +146,22 @@ function CreateListingModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-auto p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-5">Post a Listing</h2>
+        {create.isError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+            <p className="text-red-600 text-sm">Failed to create listing. Please try again.</p>
+          </div>
+        )}
         <div className="space-y-3">
-          <F label="Title" name="title" placeholder="e.g. SaaS Sales Referral" />
+          <F label="Title" name="title" placeholder="e.g. SaaS Sales Referral" required />
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-            <textarea value={form.description} onChange={(e) => update("description", e.target.value)}
-              placeholder="Describe the opportunity, ideal leads, and how payouts work…"
+            <label className="block text-sm font-medium text-slate-700 mb-1">Description <span className="text-red-400 ml-0.5">*</span></label>
+            <textarea
+              value={form.description}
+              onChange={(e) => update("description", e.target.value)}
+              placeholder="Describe the opportunity, ideal leads, and how payouts work..."
               rows={3}
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none" />
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <F label="Industry" name="industry" placeholder="e.g. Technology" />
@@ -135,30 +169,27 @@ function CreateListingModal({ onClose }: { onClose: () => void }) {
           </div>
           <F label="Location (optional)" name="location" placeholder="e.g. United States" />
           <div className="grid grid-cols-2 gap-3">
-            <F label="Payout Amount ($)" name="payoutAmount" type="number" placeholder="500" />
-            <F label="Payout Trigger" name="payoutTrigger" placeholder="e.g. Deal closes" />
+            <F label="Payout Amount ($)" name="payoutAmount" type="number" placeholder="500" required />
+            <F label="Payout Trigger" name="payoutTrigger" placeholder="e.g. Deal closes" required />
           </div>
           <F label="Payment Deadline (days)" name="payoutDeadlineDays" type="number" placeholder="30" />
         </div>
         <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Cancel
+          </button>
           <button
             onClick={() => create.mutate()}
-            disabled={create.isPending}
-            className="flex-1 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-semibold disabled:opacity-60"
+            disabled={create.isPending || !form.title || !form.payoutAmount}
+            className="flex-1 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-sm font-semibold disabled:opacity-60 transition-colors"
           >
-            {create.isPending ? "Posting…" : "Post Listing"}
+            {create.isPending ? "Posting..." : "Post Listing"}
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ListChecksIcon() {
-  return (
-    <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
-      <span className="text-2xl">📋</span>
     </div>
   );
 }

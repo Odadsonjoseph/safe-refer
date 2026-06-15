@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
+import { Check } from "lucide-react";
 
 const steps = ["Profile", "Identity", "W-9", "Review"];
 
@@ -27,6 +28,7 @@ export default function OnboardingPage() {
     w9City: "",
     w9State: "",
     w9Zip: "",
+    role: "referrer" as "poster" | "referrer" | "both",
   });
 
   const user = session?.user as any;
@@ -58,9 +60,11 @@ export default function OnboardingPage() {
     }
   }
 
-  const Field = ({ label, name, type = "text", placeholder = "" }: any) => (
+  const Field = ({ label, name, type = "text", placeholder = "", required = false }: any) => (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
+      </label>
       <input
         type={type}
         value={(form as any)[name]}
@@ -89,7 +93,7 @@ export default function OnboardingPage() {
               <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
                 i < step ? "bg-sky-500 text-white" : i === step ? "bg-sky-100 text-sky-600 ring-2 ring-sky-400" : "bg-slate-200 text-slate-400"
               }`}>
-                {i < step ? "✓" : i + 1}
+                {i < step ? <Check size={12} /> : i + 1}
               </div>
               <span className={`text-sm font-medium ${i === step ? "text-slate-900" : "text-slate-400"}`}>{s}</span>
               {i < steps.length - 1 && <div className="w-6 h-px bg-slate-200" />}
@@ -101,15 +105,50 @@ export default function OnboardingPage() {
           {step === 0 && (
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 text-lg">Complete your profile</h3>
-              <Field label="Phone Number" name="phone" placeholder="+1 (555) 000-0000" />
-              <Field label="Bio" name="bio" placeholder="Tell us about yourself…" />
-              {(user?.role === "referrer" || user?.role === "both") && (
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">I want to</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "referrer", label: "Refer leads" },
+                    { value: "poster", label: "Post listings" },
+                    { value: "both", label: "Both" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => update("role", opt.value)}
+                      className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
+                        form.role === opt.value
+                          ? "border-sky-500 bg-sky-50 text-sky-700"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Field label="Phone Number" name="phone" placeholder="+1 (555) 000-0000" required />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Bio</label>
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => update("bio", e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+                />
+              </div>
+
+              {(form.role === "referrer" || form.role === "both") && (
                 <>
                   <Field label="Skills / Expertise" name="skills" placeholder="e.g. SaaS sales, real estate, finance" />
                   <Field label="LinkedIn URL" name="linkedinUrl" placeholder="https://linkedin.com/in/..." />
                 </>
               )}
-              {(user?.role === "poster" || user?.role === "both") && (
+              {(form.role === "poster" || form.role === "both") && (
                 <>
                   <Field label="Company Name" name="companyName" placeholder="Acme Corp" />
                   <Field label="Company Website" name="companyWebsite" placeholder="https://..." />
@@ -118,53 +157,79 @@ export default function OnboardingPage() {
               )}
             </div>
           )}
+
           {step === 1 && (
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 text-lg">Identity Verification</h3>
-              <p className="text-sm text-slate-500">We need to verify your identity to enable payouts.</p>
-              <Field label="ID Front (URL)" name="idFrontUrl" placeholder="Paste URL to front of ID" />
-              <Field label="ID Back (URL)" name="idBackUrl" placeholder="Paste URL to back of ID" />
-              <Field label="Selfie (URL)" name="selfieUrl" placeholder="Paste URL to selfie" />
-            </div>
-          )}
-          {step === 2 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 text-lg">W-9 Tax Form</h3>
-              <p className="text-sm text-slate-500">Required for payouts over $600/year.</p>
-              <Field label="Legal Name" name="w9LegalName" placeholder="Full legal name" />
-              <Field label="SSN / EIN" name="w9Ssn" placeholder="XXX-XX-XXXX" />
-              <Field label="Street Address" name="w9Address" placeholder="123 Main St" />
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1">
-                  <Field label="City" name="w9City" placeholder="New York" />
-                </div>
-                <div className="col-span-1">
-                  <Field label="State" name="w9State" placeholder="NY" />
-                </div>
-                <div className="col-span-1">
-                  <Field label="ZIP" name="w9Zip" placeholder="10001" />
-                </div>
+              <p className="text-sm text-slate-500">We need to verify your identity to enable payouts. Upload photos or provide URLs.</p>
+              <Field label="Government ID — Front" name="idFrontUrl" placeholder="Paste URL or upload link" required />
+              <Field label="Government ID — Back" name="idBackUrl" placeholder="Paste URL or upload link" required />
+              <Field label="Selfie with ID" name="selfieUrl" placeholder="Paste URL or upload link" required />
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Your information is encrypted and only used for identity verification. We use Stripe's secure infrastructure for all payout processing.
+                </p>
               </div>
             </div>
           )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-slate-900 text-lg">W-9 Tax Form</h3>
+              <p className="text-sm text-slate-500">Required by the IRS for payouts over $600/year. Your information is encrypted.</p>
+              <Field label="Legal Name" name="w9LegalName" placeholder="Full legal name as it appears on your tax return" required />
+              <Field label="SSN / EIN" name="w9Ssn" placeholder="XXX-XX-XXXX" required />
+              <Field label="Street Address" name="w9Address" placeholder="123 Main St" required />
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="City" name="w9City" placeholder="New York" />
+                <Field label="State" name="w9State" placeholder="NY" />
+                <Field label="ZIP" name="w9Zip" placeholder="10001" />
+              </div>
+            </div>
+          )}
+
           {step === 3 && (
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 text-lg">Review & Submit</h3>
               <p className="text-slate-500 text-sm">
                 Your application will be reviewed by our team. You'll receive an email once approved.
               </p>
-              <div className="bg-sky-50 border border-sky-100 rounded-lg p-4 space-y-1.5 text-sm">
-                <p><span className="font-medium text-slate-700">Name:</span> <span className="text-slate-600">{user?.name}</span></p>
-                <p><span className="font-medium text-slate-700">Email:</span> <span className="text-slate-600">{user?.email}</span></p>
-                <p><span className="font-medium text-slate-700">Phone:</span> <span className="text-slate-600">{form.phone || "—"}</span></p>
-                <p><span className="font-medium text-slate-700">W-9:</span> <span className="text-slate-600">{form.w9LegalName || "—"}</span></p>
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600">Name</span>
+                  <span className="text-slate-900">{user?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600">Email</span>
+                  <span className="text-slate-900">{user?.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600">Phone</span>
+                  <span className="text-slate-900">{form.phone || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600">Role</span>
+                  <span className="text-slate-900 capitalize">{form.role}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium text-slate-600">W-9 Name</span>
+                  <span className="text-slate-900">{form.w9LegalName || "—"}</span>
+                </div>
               </div>
+            </div>
+          )}
+
+          {(saveMutation.isError || submitMutation.isError) && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
+              <p className="text-red-600 text-sm">Something went wrong. Please try again.</p>
             </div>
           )}
 
           <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
             {step > 0 ? (
-              <button onClick={() => setStep((s) => s - 1)} className="text-sm text-slate-500 hover:text-slate-700">← Back</button>
+              <button onClick={() => setStep((s) => s - 1)} className="text-sm text-slate-500 hover:text-slate-700">
+                Back
+              </button>
             ) : <div />}
             <button
               onClick={handleNext}
@@ -172,8 +237,8 @@ export default function OnboardingPage() {
               className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60"
             >
               {saveMutation.isPending || submitMutation.isPending
-                ? "Saving…"
-                : step === steps.length - 1 ? "Submit Application" : "Save & Continue →"}
+                ? "Saving..."
+                : step === steps.length - 1 ? "Submit Application" : "Save & Continue"}
             </button>
           </div>
         </div>

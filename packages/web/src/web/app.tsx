@@ -13,6 +13,7 @@ import Listings from "./pages/listings";
 import ListingDetail from "./pages/listing-detail";
 import Submissions from "./pages/submissions";
 import Earnings from "./pages/earnings";
+import Payments from "./pages/payments";
 import Admin from "./pages/admin";
 
 function LoadingSpinner() {
@@ -39,6 +40,7 @@ function useProfile() {
     },
     enabled: !!user,
     staleTime: 30_000,
+    retry: 2,
   });
 
   return {
@@ -59,17 +61,16 @@ function ProtectedRoute({
 
   if (loading) return <LoadingSpinner />;
   if (!authUser) return <Redirect to="/sign-in" />;
-  if (adminOnly && !profile?.isAdmin) return <Redirect to="/dashboard" />;
 
-  // If profile not approved yet and not admin, send to pending
-  if (
-    !profile?.isAdmin &&
-    profile?.applicationStatus &&
-    profile.applicationStatus !== "approved" &&
-    profile.applicationStatus !== "incomplete"
-  ) {
-    return <Redirect to="/pending" />;
-  }
+  // Admins always get through — never redirect admins to pending
+  if (profile?.isAdmin) return <Component />;
+
+  if (adminOnly) return <Redirect to="/dashboard" />;
+
+  // Redirect incomplete or submitted users to pending/onboarding
+  if (profile?.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
+  if (profile?.applicationStatus === "submitted") return <Redirect to="/pending" />;
+  if (profile?.applicationStatus === "rejected") return <Redirect to="/pending" />;
 
   return <Component />;
 }
@@ -96,6 +97,7 @@ function App() {
         <Route path="/listings/:id" component={() => <ProtectedRoute component={ListingDetail} />} />
         <Route path="/submissions" component={() => <ProtectedRoute component={Submissions} />} />
         <Route path="/earnings" component={() => <ProtectedRoute component={Earnings} />} />
+        <Route path="/payments" component={() => <ProtectedRoute component={Payments} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route path="/admin/:tab" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route component={() => <Redirect to="/sign-in" />} />

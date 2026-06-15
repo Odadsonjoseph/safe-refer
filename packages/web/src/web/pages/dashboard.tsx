@@ -30,7 +30,7 @@ export default function DashboardPage() {
       <div className="max-w-4xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-slate-900">
-            Good {getTimeOfDay()}, {user?.name?.split(" ")[0] ?? "there"} 👋
+            Good {getTimeOfDay()}, {user?.name?.split(" ")[0] ?? "there"}
           </h1>
           <p className="text-slate-500 mt-1 text-sm">Here's your overview</p>
         </div>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
                     <p className="text-slate-400 text-xs mt-0.5">{l.posterCompany ?? l.posterName} · {l.industry}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-sky-600 text-sm">${l.payoutAmount.toFixed(0)}</p>
+                    <p className="font-semibold text-sky-600 text-sm">${l.payoutAmount?.toFixed(0)}</p>
                     <p className="text-slate-400 text-xs">{l.payoutTrigger}</p>
                   </div>
                 </div>

@@ -1,8 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { authClient, clearToken } from "../lib/auth";
 import {
-  LayoutDashboard, ListChecks, Users, BadgeDollarSign,
-  LogOut, Menu, X, ShieldCheck, FileText, Settings
+  LayoutDashboard, ListChecks, ShieldCheck, FileText,
+  LogOut, Menu, BadgeDollarSign, CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { href: "/listings", label: "Listings", icon: <ListChecks size={18} /> },
   { href: "/submissions", label: "My Referrals", icon: <FileText size={18} /> },
   { href: "/earnings", label: "Earnings", icon: <BadgeDollarSign size={18} /> },
+  { href: "/payments", label: "Payments", icon: <CreditCard size={18} /> },
   { href: "/admin", label: "Admin", icon: <ShieldCheck size={18} />, adminOnly: true },
 ];
 
@@ -47,9 +48,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </Link>
       </div>
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
         {filtered.map((item) => {
-          const active = location.startsWith(item.href);
+          const active = location === item.href || (item.href !== "/dashboard" && location.startsWith(item.href));
           return (
             <Link
               key={item.href}
@@ -108,7 +109,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top bar */}
+        {/* Top bar mobile */}
         <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 lg:hidden">
           <button onClick={() => setMobileOpen(true)} className="text-slate-600">
             <Menu size={22} />

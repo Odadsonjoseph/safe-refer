@@ -16,7 +16,7 @@ export default function PendingPage() {
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Application Under Review</h1>
         <p className="text-slate-500 mb-8 leading-relaxed">
-          Your application has been submitted. Our team will review it and you'll receive an email at the address on file once approved. This usually takes 1–2 business days.
+          Your application has been submitted. Our team will review it and you'll receive an email once approved. This typically takes 1–2 business days.
         </p>
         <button
           onClick={handleSignOut}
