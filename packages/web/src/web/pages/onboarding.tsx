@@ -1,246 +1,286 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
-import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
-import { Check } from "lucide-react";
 
-const steps = ["Profile", "Identity", "W-9", "Review"];
-
-export default function OnboardingPage() {
+export default function Onboarding() {
   const [, navigate] = useLocation();
-  const { data: session } = authClient.useSession();
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState({
-    phone: "",
-    bio: "",
-    skills: "",
-    linkedinUrl: "",
-    companyName: "",
-    companyWebsite: "",
-    industry: "",
-    idFrontUrl: "",
-    idBackUrl: "",
-    selfieUrl: "",
-    w9LegalName: "",
-    w9Ssn: "",
-    w9Address: "",
-    w9City: "",
-    w9State: "",
-    w9Zip: "",
-    role: "referrer" as "poster" | "referrer" | "both",
-  });
+  const role = sessionStorage.getItem("sr_pending_role") as "affiliate" | "business" | null;
+  const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const user = session?.user as any;
+  // Affiliate fields
+  const [phone, setPhone] = useState("");
+  const [bio, setBio] = useState("");
 
-  const update = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  // Business fields
+  const [companyName, setCompanyName] = useState("");
+  const [website, setWebsite] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [description, setDescription] = useState("");
+  const [bizPhone, setBizPhone] = useState("");
 
-  const saveMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const res = await api.users.me.$patch({ json: data });
-      return res.json();
-    },
-  });
+  useEffect(() => {
+    if (!role) navigate("/sign-up");
+  }, [role, navigate]);
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
-      const res = await (api.users.me as any)["submit-application"].$post({});
-      return res.json();
-    },
-    onSuccess: () => navigate("/pending"),
-  });
-
-  async function handleNext() {
-    if (step < steps.length - 1) {
-      await saveMutation.mutateAsync(form);
-      setStep((s) => s + 1);
-    } else {
-      await saveMutation.mutateAsync({ ...form, w9Completed: true });
-      await submitMutation.mutateAsync();
+  async function submitAffiliate(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const session = await authClient.getSession();
+      const token = (session as any)?.data?.session?.token;
+      const res = await fetch("/api/users/me/set-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ role: "affiliate", phone, bio }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to complete profile");
+      }
+      sessionStorage.removeItem("sr_pending_role");
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  const Field = ({ label, name, type = "text", placeholder = "", required = false }: any) => (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-      </label>
-      <input
-        type={type}
-        value={(form as any)[name]}
-        onChange={(e) => update(name, e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent"
-      />
-    </div>
-  );
+  async function submitBusiness(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const session = await authClient.getSession();
+      const token = (session as any)?.data?.session?.token;
+      const res = await fetch("/api/users/me/set-role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          role: "business",
+          companyName,
+          website,
+          industry,
+          description,
+          phone: bizPhone,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to submit application");
+      }
+      sessionStorage.removeItem("sr_pending_role");
+      navigate("/pending");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const industries = [
+    "Real Estate", "Insurance", "Finance & Lending",
+    "Home Services", "Legal Services", "Healthcare",
+    "Technology", "Automotive", "Education", "Other",
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-lg">
-        {/* Logo */}
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">SR</span>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center shadow">
+            <span className="text-white font-bold text-lg">S</span>
           </div>
-          <span className="font-bold text-slate-900 text-lg">Safe Refer</span>
+          <span className="text-sky-600 font-bold text-xl">Safe Refer</span>
         </div>
 
-        {/* Steps */}
-        <div className="flex items-center gap-2 mb-8">
-          {steps.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                i < step ? "bg-sky-500 text-white" : i === step ? "bg-sky-100 text-sky-600 ring-2 ring-sky-400" : "bg-slate-200 text-slate-400"
-              }`}>
-                {i < step ? <Check size={12} /> : i + 1}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+          {role === "affiliate" ? (
+            <>
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 bg-sky-50 text-sky-600 px-3 py-1 rounded-full text-sm font-medium mb-3">
+                  <span>Affiliate Account</span>
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900">Complete your profile</h1>
+                <p className="text-gray-500 mt-1">You'll be approved instantly and can start submitting leads right away.</p>
               </div>
-              <span className={`text-sm font-medium ${i === step ? "text-slate-900" : "text-slate-400"}`}>{s}</span>
-              {i < steps.length - 1 && <div className="w-6 h-px bg-slate-200" />}
-            </div>
-          ))}
-        </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          {step === 0 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 text-lg">Complete your profile</h3>
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+                  {error}
+                </div>
+              )}
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">I want to</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: "referrer", label: "Refer leads" },
-                    { value: "poster", label: "Post listings" },
-                    { value: "both", label: "Both" },
-                  ].map((opt) => (
+              <form onSubmit={submitAffiliate} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 (555) 000-0000"
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Short Bio <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <textarea
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Tell businesses a bit about yourself and your network..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                  />
+                </div>
+
+                <div className="bg-sky-50 rounded-xl p-4 text-sm text-sky-700">
+                  <strong>Instant approval</strong> — once you submit, you'll go straight to your dashboard. No waiting required.
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-sky-500 text-white rounded-xl py-3 font-semibold hover:bg-sky-600 transition disabled:opacity-50"
+                >
+                  {loading ? "Setting up your account..." : "Start Referring →"}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              {step === 1 && (
+                <>
+                  <div className="mb-6">
+                    <div className="inline-flex items-center gap-2 bg-amber-50 text-amber-600 px-3 py-1 rounded-full text-sm font-medium mb-3">
+                      <span>Business Account</span>
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900">Tell us about your business</h1>
+                    <p className="text-gray-500 mt-1">Your application will be reviewed by our team. Most approvals happen within 24 hours.</p>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+                      {error}
+                    </div>
+                  )}
+
+                  <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Acme Corp"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Website <span className="text-gray-400 font-normal">(optional)</span>
+                      </label>
+                      <input
+                        type="url"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        placeholder="https://yourcompany.com"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Industry</label>
+                      <select
+                        required
+                        value={industry}
+                        onChange={(e) => setIndustry(e.target.value)}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 bg-white"
+                      >
+                        <option value="">Select industry...</option>
+                        {industries.map((i) => (
+                          <option key={i} value={i}>{i}</option>
+                        ))}
+                      </select>
+                    </div>
                     <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => update("role", opt.value)}
-                      className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
-                        form.role === opt.value
-                          ? "border-sky-500 bg-sky-50 text-sky-700"
-                          : "border-slate-200 text-slate-600 hover:border-slate-300"
-                      }`}
+                      type="submit"
+                      className="w-full bg-sky-500 text-white rounded-xl py-3 font-semibold hover:bg-sky-600 transition"
                     >
-                      {opt.label}
+                      Continue →
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              <Field label="Phone Number" name="phone" placeholder="+1 (555) 000-0000" required />
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Bio</label>
-                <textarea
-                  value={form.bio}
-                  onChange={(e) => update("bio", e.target.value)}
-                  placeholder="Tell us about yourself..."
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
-                />
-              </div>
-
-              {(form.role === "referrer" || form.role === "both") && (
-                <>
-                  <Field label="Skills / Expertise" name="skills" placeholder="e.g. SaaS sales, real estate, finance" />
-                  <Field label="LinkedIn URL" name="linkedinUrl" placeholder="https://linkedin.com/in/..." />
+                  </form>
                 </>
               )}
-              {(form.role === "poster" || form.role === "both") && (
+
+              {step === 2 && (
                 <>
-                  <Field label="Company Name" name="companyName" placeholder="Acme Corp" />
-                  <Field label="Company Website" name="companyWebsite" placeholder="https://..." />
-                  <Field label="Industry" name="industry" placeholder="e.g. Technology, Finance" />
+                  <div className="mb-6">
+                    <button onClick={() => setStep(1)} className="text-sm text-sky-500 hover:underline mb-3 block">
+                      ← Back
+                    </button>
+                    <h1 className="text-2xl font-bold text-gray-900">A bit more detail</h1>
+                    <p className="text-gray-500 mt-1">This helps our team verify your business quickly.</p>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-4">
+                      {error}
+                    </div>
+                  )}
+
+                  <form onSubmit={submitBusiness} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        required
+                        value={bizPhone}
+                        onChange={(e) => setBizPhone(e.target.value)}
+                        placeholder="+1 (555) 000-0000"
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Business Description</label>
+                      <textarea
+                        required
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Describe what your business does and what kind of referrals you're looking for..."
+                        rows={4}
+                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                      />
+                    </div>
+
+                    <div className="bg-amber-50 rounded-xl p-4 text-sm text-amber-700">
+                      Your application will be reviewed and you'll be notified within <strong>24 hours</strong>.
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-sky-500 text-white rounded-xl py-3 font-semibold hover:bg-sky-600 transition disabled:opacity-50"
+                    >
+                      {loading ? "Submitting application..." : "Submit Application →"}
+                    </button>
+                  </form>
                 </>
               )}
-            </div>
+            </>
           )}
-
-          {step === 1 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 text-lg">Identity Verification</h3>
-              <p className="text-sm text-slate-500">We need to verify your identity to enable payouts. Upload photos or provide URLs.</p>
-              <Field label="Government ID — Front" name="idFrontUrl" placeholder="Paste URL or upload link" required />
-              <Field label="Government ID — Back" name="idBackUrl" placeholder="Paste URL or upload link" required />
-              <Field label="Selfie with ID" name="selfieUrl" placeholder="Paste URL or upload link" required />
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  Your information is encrypted and only used for identity verification. We use Stripe's secure infrastructure for all payout processing.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 text-lg">W-9 Tax Form</h3>
-              <p className="text-sm text-slate-500">Required by the IRS for payouts over $600/year. Your information is encrypted.</p>
-              <Field label="Legal Name" name="w9LegalName" placeholder="Full legal name as it appears on your tax return" required />
-              <Field label="SSN / EIN" name="w9Ssn" placeholder="XXX-XX-XXXX" required />
-              <Field label="Street Address" name="w9Address" placeholder="123 Main St" required />
-              <div className="grid grid-cols-3 gap-3">
-                <Field label="City" name="w9City" placeholder="New York" />
-                <Field label="State" name="w9State" placeholder="NY" />
-                <Field label="ZIP" name="w9Zip" placeholder="10001" />
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900 text-lg">Review & Submit</h3>
-              <p className="text-slate-500 text-sm">
-                Your application will be reviewed by our team. You'll receive an email once approved.
-              </p>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-600">Name</span>
-                  <span className="text-slate-900">{user?.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-600">Email</span>
-                  <span className="text-slate-900">{user?.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-600">Phone</span>
-                  <span className="text-slate-900">{form.phone || "—"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-600">Role</span>
-                  <span className="text-slate-900 capitalize">{form.role}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-slate-600">W-9 Name</span>
-                  <span className="text-slate-900">{form.w9LegalName || "—"}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {(saveMutation.isError || submitMutation.isError) && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg px-3.5 py-2.5">
-              <p className="text-red-600 text-sm">Something went wrong. Please try again.</p>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
-            {step > 0 ? (
-              <button onClick={() => setStep((s) => s - 1)} className="text-sm text-slate-500 hover:text-slate-700">
-                Back
-              </button>
-            ) : <div />}
-            <button
-              onClick={handleNext}
-              disabled={saveMutation.isPending || submitMutation.isPending}
-              className="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-5 py-2.5 rounded-lg text-sm transition-colors disabled:opacity-60"
-            >
-              {saveMutation.isPending || submitMutation.isPending
-                ? "Saving..."
-                : step === steps.length - 1 ? "Submit Application" : "Save & Continue"}
-            </button>
-          </div>
         </div>
       </div>
     </div>

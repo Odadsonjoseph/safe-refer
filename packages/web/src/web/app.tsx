@@ -4,6 +4,7 @@ import { AgentFeedback } from "@runablehq/website-runtime";
 import { useAuth } from "./lib/auth";
 import { useQuery } from "@tanstack/react-query";
 
+import Layout from "./components/layout";
 import SignIn from "./pages/sign-in";
 import SignUp from "./pages/sign-up";
 import Onboarding from "./pages/onboarding";
@@ -15,6 +16,8 @@ import Submissions from "./pages/submissions";
 import Earnings from "./pages/earnings";
 import Payments from "./pages/payments";
 import Admin from "./pages/admin";
+import Referrals from "./pages/referrals";
+import Learning from "./pages/learning";
 
 function LoadingSpinner() {
   return (
@@ -62,17 +65,18 @@ function ProtectedRoute({
   if (loading) return <LoadingSpinner />;
   if (!authUser) return <Redirect to="/sign-in" />;
 
-  // Admins always get through — never redirect admins to pending
-  if (profile?.isAdmin) return <Component />;
+  // Admins always get through — render without Layout if admin-only (admin has its own layout)
+  if (profile?.isAdmin) return adminOnly ? <Component /> : <Layout><Component /></Layout>;
 
   if (adminOnly) return <Redirect to="/dashboard" />;
 
-  // Redirect incomplete or submitted users to pending/onboarding
+  // Affiliates are auto-approved — only redirect if truly incomplete
   if (profile?.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
-  if (profile?.applicationStatus === "submitted") return <Redirect to="/pending" />;
-  if (profile?.applicationStatus === "rejected") return <Redirect to="/pending" />;
+  // Businesses with submitted or rejected status go to pending
+  if (profile?.role === "business" && profile?.applicationStatus === "submitted") return <Redirect to="/pending" />;
+  if (profile?.role === "business" && profile?.applicationStatus === "rejected") return <Redirect to="/pending" />;
 
-  return <Component />;
+  return adminOnly ? <Component /> : <Layout><Component /></Layout>;
 }
 
 function GuestRoute({ component: Component }: { component: React.ComponentType }) {
@@ -98,6 +102,9 @@ function App() {
         <Route path="/submissions" component={() => <ProtectedRoute component={Submissions} />} />
         <Route path="/earnings" component={() => <ProtectedRoute component={Earnings} />} />
         <Route path="/payments" component={() => <ProtectedRoute component={Payments} />} />
+        <Route path="/marketplace" component={() => <ProtectedRoute component={Listings} />} />
+        <Route path="/referrals" component={() => <ProtectedRoute component={Referrals} />} />
+        <Route path="/learning" component={() => <ProtectedRoute component={Learning} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route path="/admin/:tab" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route component={() => <Redirect to="/sign-in" />} />

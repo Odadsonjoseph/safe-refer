@@ -7,11 +7,15 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  role: text("role", { enum: ["referrer", "poster", "both"] }).notNull().default("referrer"),
+  // Roles: affiliate (earns commissions), business (posts offers), admin flag separate
+  role: text("role", { enum: ["affiliate", "business"] }).notNull().default("affiliate"),
   isAdmin: boolean("is_admin").notNull().default(false),
   applicationStatus: text("application_status", {
     enum: ["incomplete", "submitted", "approved", "rejected"],
   }).notNull().default("incomplete"),
+  // Referral system
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"), // affiliateId who referred them
   // Stripe
   stripeAccountId: text("stripe_account_id"),
   stripeCustomerId: text("stripe_customer_id"),
@@ -29,13 +33,14 @@ export const users = pgTable("users", {
   w9State: text("w9_state"),
   w9Zip: text("w9_zip"),
   w9Completed: boolean("w9_completed").notNull().default(false),
-  // Business profile (posters)
+  // Business profile
   companyName: text("company_name"),
   companyWebsite: text("company_website"),
   companySize: text("company_size"),
   ein: text("ein"),
   industry: text("industry"),
-  // Referrer profile
+  businessDescription: text("business_description"),
+  // Affiliate profile
   skills: text("skills"),
   linkedinUrl: text("linkedin_url"),
   bio: text("bio"),
@@ -43,10 +48,10 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });
 
-// ─── Listings ────────────────────────────────────────────────────────────────
+// ─── Listings (Offers posted by businesses) ──────────────────────────────────
 export const listings = pgTable("listings", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  posterId: text("poster_id").notNull().references(() => users.id),
+  businessId: text("business_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   industry: text("industry").notNull(),
@@ -56,9 +61,12 @@ export const listings = pgTable("listings", {
   payoutTrigger: text("payout_trigger").notNull(),
   payoutDeadlineDays: integer("payout_deadline_days").notNull().default(30),
   status: text("status", { enum: ["active", "paused", "closed"] }).notNull().default("active"),
-  // Denormalized poster info
-  posterName: text("poster_name").notNull(),
-  posterCompany: text("poster_company"),
+  // Requirements shown to affiliates
+  requirements: text("requirements"),
+  targetAudience: text("target_audience"),
+  // Denormalized business info
+  businessName: text("business_name").notNull(),
+  businessCompany: text("business_company"),
   // Stats
   totalSubmissions: integer("total_submissions").notNull().default(0),
   closedDeals: integer("closed_deals").notNull().default(0),
@@ -67,11 +75,11 @@ export const listings = pgTable("listings", {
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });
 
-// ─── Submissions ─────────────────────────────────────────────────────────────
+// ─── Submissions (Leads submitted by affiliates) ─────────────────────────────
 export const submissions = pgTable("submissions", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   listingId: text("listing_id").notNull().references(() => listings.id),
-  referrerId: text("referrer_id").notNull().references(() => users.id),
+  affiliateId: text("affiliate_id").notNull().references(() => users.id),
   // Lead info
   leadName: text("lead_name").notNull(),
   leadEmail: text("lead_email").notNull(),
@@ -84,13 +92,14 @@ export const submissions = pgTable("submissions", {
   status: text("status", {
     enum: ["pending", "reviewing", "accepted", "rejected", "closed", "forfeited"],
   }).notNull().default("pending"),
-  // Payment lifecycle
+  // Payment lifecycle — admin manages payouts
   paymentStatus: text("payment_status", {
     enum: ["unpaid", "deposit_paid", "fully_paid", "transferred", "refunded", "forfeited"],
   }).notNull().default("unpaid"),
   depositAmount: real("deposit_amount"),
   finalAmount: real("final_amount"),
   payoutAmount: real("payout_amount"),
+  adminNotes: text("admin_notes"),
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeTransferId: text("stripe_transfer_id"),
   paymentDeadline: timestamp("payment_deadline"),
@@ -99,6 +108,31 @@ export const submissions = pgTable("submissions", {
   disclosureSignedAt: timestamp("disclosure_signed_at"),
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
+});
+
+// ─── Referral Overrides (affiliate earns when someone they referred earns) ───
+export const referralOverrides = pgTable("referral_overrides", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  affiliateId: text("affiliate_id").notNull().references(() => users.id), // earner of override
+  referredUserId: text("referred_user_id").notNull().references(() => users.id),
+  submissionId: text("submission_id").references(() => submissions.id),
+  overridePercent: real("override_percent").notNull().default(10), // % of referred user's payout
+  overrideAmount: real("override_amount").notNull().default(0),
+  status: text("status", { enum: ["pending", "paid", "forfeited"] }).notNull().default("pending"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()),
+});
+
+// ─── Learning Resources ───────────────────────────────────────────────────────
+export const learningResources = pgTable("learning_resources", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  description: text("description"),
+  url: text("url"),
+  videoUrl: text("video_url"),
+  category: text("category").notNull().default("general"),
+  order: integer("order").notNull().default(0),
+  published: boolean("published").notNull().default(true),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()),
 });
 
 // ─── Auth (Better Auth generated tables) ─────────────────────────────────────

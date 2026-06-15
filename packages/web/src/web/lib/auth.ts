@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+import { magicLinkClient } from "better-auth/client/plugins";
 
 export const TOKEN_KEY = "safe_refer_token";
 
@@ -15,6 +16,7 @@ export const authClient = createAuthClient({
       token: () => localStorage.getItem(TOKEN_KEY) ?? "",
     },
   },
+  plugins: [magicLinkClient()],
 });
 
 export function captureToken(ctx: { response: Response }) {
@@ -32,10 +34,11 @@ export type AuthUser = {
   email: string;
   emailVerified: boolean;
   image?: string;
-  // extended from users table
-  role?: "poster" | "referrer" | "both";
+  role?: "affiliate" | "business";
   isAdmin?: boolean;
   applicationStatus?: "incomplete" | "submitted" | "approved" | "rejected";
+  referralCode?: string;
+  referredBy?: string;
   companyName?: string;
   phone?: string;
   [key: string]: any;
@@ -43,9 +46,7 @@ export type AuthUser = {
 
 export function useAuth() {
   const { data: session, isPending: loading } = authClient.useSession();
-
   const user = session?.user as AuthUser | null | undefined;
-
   return {
     user: user ?? null,
     loading,

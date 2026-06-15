@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { BarChart3, Users, ListChecks, FileText, ArrowLeft } from "lucide-react";
 
-type Tab = "stats" | "applications" | "users" | "listings" | "submissions";
+type Tab = "stats" | "applications" | "users" | "listings" | "submissions" | "payouts";
 
 export default function Admin() {
   const [, navigate] = useLocation();
@@ -116,12 +116,37 @@ export default function Admin() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "submissions"] }),
   });
 
+  const { data: payoutsData, isLoading: payoutsLoading, refetch: refetchPayouts } = useQuery({
+    queryKey: ["admin", "payouts"],
+    queryFn: async () => {
+      const r = await fetch("/api/admin/payouts", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("safe_refer_token") ?? ""}` },
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json() as Promise<any>;
+    },
+    enabled: tab === "payouts",
+  });
+
+  const markPaidMutation = useMutation({
+    mutationFn: async (submissionId: string) => {
+      const r = await fetch(`/api/admin/payouts/${submissionId}/mark-paid`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${localStorage.getItem("safe_refer_token") ?? ""}` },
+      });
+      if (!r.ok) throw new Error("Failed");
+      return r.json();
+    },
+    onSuccess: () => refetchPayouts(),
+  });
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "stats", label: "Overview", icon: <BarChart3 size={15} /> },
     { id: "applications", label: "Applications", icon: <FileText size={15} /> },
     { id: "users", label: "Users", icon: <Users size={15} /> },
     { id: "listings", label: "Listings", icon: <ListChecks size={15} /> },
     { id: "submissions", label: "Submissions", icon: <FileText size={15} /> },
+    { id: "payouts", label: "Payouts", icon: <BarChart3 size={15} /> },
   ];
 
   return (
@@ -322,6 +347,54 @@ export default function Admin() {
                   <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
                     <p className="text-slate-500">No listings yet</p>
                   </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Payouts Tab */}
+        {tab === "payouts" && (
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Payout Management</h2>
+            <p className="text-sm text-slate-500 mb-6">Accepted submissions waiting for affiliate payment transfer.</p>
+            {payoutsLoading ? <Spinner /> : (
+              <div className="space-y-3">
+                {!(payoutsData?.payouts?.length) ? (
+                  <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
+                    <p className="text-slate-500">No pending payouts</p>
+                  </div>
+                ) : (
+                  payoutsData.payouts.map((p: any) => (
+                    <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-5 flex items-center justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-slate-900">{p.leadName}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                            p.paymentStatus === "transferred" ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                          }`}>
+                            {p.paymentStatus || "unpaid"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-0.5">{p.listingTitle}</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          Affiliate: {p.affiliateName} · Accepted {new Date(p.acceptedAt || p.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="font-bold text-sky-600 text-lg">${p.payoutAmount?.toFixed(2)}</span>
+                        {p.paymentStatus !== "transferred" && (
+                          <button
+                            onClick={() => markPaidMutation.mutate(p.id)}
+                            disabled={markPaidMutation.isPending}
+                            className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 disabled:opacity-50 transition"
+                          >
+                            Mark Transferred
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             )}

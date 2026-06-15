@@ -1,52 +1,53 @@
-# Safe Refer — Full Fix & Feature Build
+# Safe Refer — Full Auth & Roles Rebuild
 
-## ROOT CAUSE OF SIGN-UP FAILURE
-1. **No .env file** → DB creds missing locally
-2. **auth-schema NOT in drizzle.config** → better-auth tables (user, session, account, verification) may not exist in Supabase
-3. **Two user tables**: `user` (better-auth) vs `users` (app schema) — need to merge them or link them
-4. **betterAuth baseURL** using WEBSITE_URL which may be wrong in prod
+## Roles
+- `affiliate` (was referrer): browse marketplace, submit leads, referral links, learning center, earnings
+- `business` (was poster): post offers, review leads, analytics — admin handles payouts
+- `admin`: manage all users, approve/reject businesses, all listings+submissions, payout management, platform analytics
 
-## FIX PLAN
+## Auth Methods
+- Email + Password (existing)
+- Google OAuth (add)
+- Magic Link / email (add)
 
-### Phase 1: Database Fix (CRITICAL)
-- [x] Get DB creds via secrets form
-- [ ] Fix drizzle.config.ts to include BOTH schema files
-- [ ] Merge auth `user` table with app `users` table into one unified table
-- [ ] Push schema to Supabase via drizzle-kit push
-- [ ] Seed admin user
+## Sign-up Flow
+1. Enter name + email + password (or Google/magic link)
+2. Role selection screen (affiliate vs business) — no "both"
+3. Affiliate → short profile onboarding → approved immediately (or pending?)
+4. Business → company profile → requires admin approval
 
-### Phase 2: Auth Fix
-- [ ] Fix betterAuth to use single user table with all app fields
-- [ ] Set BETTER_AUTH_URL correctly
-- [ ] Fix trustedOrigins
-- [ ] Test sign-up → login locally
+## Schema Changes
+- users.role: "affiliate" | "business" (drop "referrer"/"poster"/"both")
+- users.referralCode: unique code for affiliate referral links
+- users.referredBy: which affiliate referred this user
+- listings.businessId: rename from posterId
+- submissions.affiliateId: rename from referrerId
+- New: learning_resources table (title, description, url, category, order)
+- New: referral_overrides table (affiliateId, referredUserId, amount, status)
 
-### Phase 3: Deploy
-- [ ] Add all env vars to Vercel
-- [ ] Push and deploy
-- [ ] Test sign-up on production
+## Files to Create/Modify
+### Backend
+- [x] schema.ts — update roles, add referral code, learning resources
+- [x] auth.ts — add Google OAuth, magic link plugins
+- [x] routes/users.ts — update role logic, add referral code gen
+- [x] routes/listings.ts — rename posterId→businessId, role checks
+- [x] routes/submissions.ts — rename referrerId→affiliateId, role checks  
+- [x] routes/admin.ts — enhanced stats, payout management
+- [x] routes/affiliate.ts — NEW: referral links, overrides, learning center
 
-### Phase 4: Complete Features
-- [ ] Admin dashboard (full)
-- [ ] Listings browse & create
-- [ ] Submissions flow
-- [ ] Earnings page
-- [ ] Onboarding flow
-- [ ] Stripe connect setup
-- [ ] Mobile app screens
+### Frontend
+- [x] lib/auth.ts — add Google/magic link methods, update types
+- [x] app.tsx — new routes, role-based redirects
+- [x] pages/sign-up.tsx — Google + magic link buttons, role selection step
+- [x] pages/sign-in.tsx — Google + magic link buttons
+- [x] pages/onboarding.tsx — split affiliate vs business flows
+- [x] pages/dashboard.tsx — role-specific dashboard
+- [x] pages/listings.tsx — "marketplace" for affiliates, "my offers" for business
+- [x] pages/submissions.tsx — affiliate view vs business review view
+- [x] pages/earnings.tsx — affiliate earnings + overrides
+- [x] pages/learning.tsx — NEW: learning center for affiliates
+- [x] pages/referrals.tsx — NEW: affiliate referral links + tracking
+- [x] pages/admin.tsx — enhanced with payout management, analytics
+- [x] components/layout.tsx — role-specific nav
 
-## KEY INSIGHT: USER TABLE MERGE
-- better-auth creates a `user` table with: id, name, email, emailVerified, image, createdAt, updatedAt
-- App schema has `users` table with ALL the extra fields
-- SOLUTION: Use better-auth's `user` table as base, configure it with all extra fields via `additionalFields`
-  OR: keep two tables and just JOIN them — simpler, less risky
-- CHOSEN APPROACH: Two tables, joined. better-auth manages `user`, app manages `users` with FK to user.id
-
-## VERCEL ENV VARS NEEDED
-- DATABASE_URL (transaction pooler, port 6543)
-- BETTER_AUTH_SECRET
-- BETTER_AUTH_URL = https://safe-refer-zeta.vercel.app
-- WEBSITE_URL = https://safe-refer-zeta.vercel.app
-- RESEND_API_KEY
-- STRIPE_SECRET_KEY
-- STRIPE_WEBHOOK_SECRET
+## Status: IN PROGRESS

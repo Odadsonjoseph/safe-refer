@@ -8413,14 +8413,14 @@ ${newlined}
       }
       return first;
     };
-    skipElement = (state, count2 = 1) => {
-      if (count2 <= 0)
+    skipElement = (state, count3 = 1) => {
+      if (count3 <= 0)
         return;
       state.pos++;
       const length = parseLength(state);
       state.pos += length;
-      if (count2 > 1) {
-        skipElement(state, count2 - 1);
+      if (count3 > 1) {
+        skipElement(state, count3 - 1);
       }
     };
     expectTag = (state, expectedTag, errorMessage) => {
@@ -15035,8 +15035,8 @@ var init_az = __esm({
 });
 
 // ../../node_modules/.bun/zod@4.3.6/node_modules/zod/v4/locales/be.js
-function getBelarusianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getBelarusianPlural(count3, one, few, many) {
+  const absCount = Math.abs(count3);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -16950,8 +16950,8 @@ var init_hu = __esm({
 });
 
 // ../../node_modules/.bun/zod@4.3.6/node_modules/zod/v4/locales/hy.js
-function getArmenianPlural(count2, one, many) {
-  return Math.abs(count2) === 1 ? one : many;
+function getArmenianPlural(count3, one, many) {
+  return Math.abs(count3) === 1 ? one : many;
 }
 function withDefiniteArticle(word) {
   if (!word)
@@ -19066,8 +19066,8 @@ var init_pt = __esm({
 });
 
 // ../../node_modules/.bun/zod@4.3.6/node_modules/zod/v4/locales/ru.js
-function getRussianPlural(count2, one, few, many) {
-  const absCount = Math.abs(count2);
+function getRussianPlural(count3, one, few, many) {
+  const absCount = Math.abs(count3);
   const lastDigit = absCount % 10;
   const lastTwoDigits = absCount % 100;
   if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
@@ -32297,13 +32297,13 @@ var init_memory_adapter = __esm({
                 else {
                   const seenSet = seenIds.get(`${baseId}-${joinModel}`);
                   const limit = joinAttr.limit ?? 100;
-                  let count2 = 0;
+                  let count3 = 0;
                   for (const matchingRecord of matchingRecords) {
-                    if (count2 >= limit) break;
+                    if (count3 >= limit) break;
                     if (!seenSet.has(matchingRecord.id)) {
                       nestedEntry[joinModelName].push(matchingRecord);
                       seenSet.add(matchingRecord.id);
-                      count2++;
+                      count3++;
                     }
                   }
                 }
@@ -32362,15 +32362,15 @@ var init_memory_adapter = __esm({
             deleteMany: async ({ model, where }) => {
               const table = db2[model];
               const res = convertWhereClause(where, model);
-              let count2 = 0;
+              let count3 = 0;
               db2[model] = table.filter((record2) => {
                 if (res.includes(record2)) {
-                  count2++;
+                  count3++;
                   return false;
                 }
                 return !res.includes(record2);
               });
-              return count2;
+              return count3;
             },
             updateMany({ model, where, update }) {
               const res = convertWhereClause(where, model);
@@ -51808,10 +51808,10 @@ var init_kysely_adapter = __esm({
               return await withReturning(data, db$1.insertInto(model).values(data), model, []);
             },
             async findOne({ model, where, select, join }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
-                if (and4) b = b.where((eb$1) => eb$1.and(and4.map((expr) => expr(eb$1))));
+                if (and3) b = b.where((eb$1) => eb$1.and(and3.map((expr) => expr(eb$1))));
                 if (or2) b = b.where((eb$1) => eb$1.or(or2.map((expr) => expr(eb$1))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -51833,7 +51833,7 @@ var init_kysely_adapter = __esm({
               return row;
             },
             async findMany({ model, where, limit, select, offset, sortBy, join }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
                 if (config4?.type === "mssql") {
@@ -51852,7 +51852,7 @@ var init_kysely_adapter = __esm({
                   model,
                   field: sortBy.field
                 })}`, sortBy.direction);
-                if (and4) b = b.where((eb$1) => eb$1.and(and4.map((expr) => expr(eb$1))));
+                if (and3) b = b.where((eb$1) => eb$1.and(and3.map((expr) => expr(eb$1))));
                 if (or2) b = b.where((eb$1) => eb$1.or(or2.map((expr) => expr(eb$1))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -51877,24 +51877,24 @@ var init_kysely_adapter = __esm({
               return res;
             },
             async update({ model, where, update: values }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.updateTable(model).set(values);
-              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
+              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               return await withReturning(values, query, model, where);
             },
             async updateMany({ model, where, update: values }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.updateTable(model).set(values);
-              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
+              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numUpdatedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
             },
             async count({ model, where }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom(model).select(db$1.fn.count("id").as("count"));
-              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
+              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = await query.execute();
               if (typeof res[0].count === "number") return res[0].count;
@@ -51902,16 +51902,16 @@ var init_kysely_adapter = __esm({
               return parseInt(res[0].count);
             },
             async delete({ model, where }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.deleteFrom(model);
-              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
+              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               await query.execute();
             },
             async deleteMany({ model, where }) {
-              const { and: and4, or: or2 } = convertWhereClause(model, where);
+              const { and: and3, or: or2 } = convertWhereClause(model, where);
               let query = db$1.deleteFrom(model);
-              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
+              if (and3) query = query.where((eb) => eb.and(and3.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numDeletedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
@@ -87128,7 +87128,9 @@ var schema_exports = {};
 __export(schema_exports, {
   account: () => account,
   accountRelations: () => accountRelations,
+  learningResources: () => learningResources,
   listings: () => listings,
+  referralOverrides: () => referralOverrides,
   session: () => session,
   sessionRelations: () => sessionRelations,
   submissions: () => submissions,
@@ -87137,7 +87139,7 @@ __export(schema_exports, {
   users: () => users,
   verification: () => verification
 });
-var users, listings, submissions;
+var users, listings, submissions, referralOverrides, learningResources;
 var init_schema15 = __esm({
   "src/api/database/schema.ts"() {
     init_pg_core();
@@ -87148,11 +87150,16 @@ var init_schema15 = __esm({
       email: text("email").notNull().unique(),
       emailVerified: boolean4("email_verified").notNull().default(false),
       image: text("image"),
-      role: text("role", { enum: ["referrer", "poster", "both"] }).notNull().default("referrer"),
+      // Roles: affiliate (earns commissions), business (posts offers), admin flag separate
+      role: text("role", { enum: ["affiliate", "business"] }).notNull().default("affiliate"),
       isAdmin: boolean4("is_admin").notNull().default(false),
       applicationStatus: text("application_status", {
         enum: ["incomplete", "submitted", "approved", "rejected"]
       }).notNull().default("incomplete"),
+      // Referral system
+      referralCode: text("referral_code").unique(),
+      referredBy: text("referred_by"),
+      // affiliateId who referred them
       // Stripe
       stripeAccountId: text("stripe_account_id"),
       stripeCustomerId: text("stripe_customer_id"),
@@ -87170,13 +87177,14 @@ var init_schema15 = __esm({
       w9State: text("w9_state"),
       w9Zip: text("w9_zip"),
       w9Completed: boolean4("w9_completed").notNull().default(false),
-      // Business profile (posters)
+      // Business profile
       companyName: text("company_name"),
       companyWebsite: text("company_website"),
       companySize: text("company_size"),
       ein: text("ein"),
       industry: text("industry"),
-      // Referrer profile
+      businessDescription: text("business_description"),
+      // Affiliate profile
       skills: text("skills"),
       linkedinUrl: text("linkedin_url"),
       bio: text("bio"),
@@ -87185,7 +87193,7 @@ var init_schema15 = __esm({
     });
     listings = pgTable("listings", {
       id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-      posterId: text("poster_id").notNull().references(() => users.id),
+      businessId: text("business_id").notNull().references(() => users.id),
       title: text("title").notNull(),
       description: text("description").notNull(),
       industry: text("industry").notNull(),
@@ -87195,9 +87203,12 @@ var init_schema15 = __esm({
       payoutTrigger: text("payout_trigger").notNull(),
       payoutDeadlineDays: integer2("payout_deadline_days").notNull().default(30),
       status: text("status", { enum: ["active", "paused", "closed"] }).notNull().default("active"),
-      // Denormalized poster info
-      posterName: text("poster_name").notNull(),
-      posterCompany: text("poster_company"),
+      // Requirements shown to affiliates
+      requirements: text("requirements"),
+      targetAudience: text("target_audience"),
+      // Denormalized business info
+      businessName: text("business_name").notNull(),
+      businessCompany: text("business_company"),
       // Stats
       totalSubmissions: integer2("total_submissions").notNull().default(0),
       closedDeals: integer2("closed_deals").notNull().default(0),
@@ -87208,7 +87219,7 @@ var init_schema15 = __esm({
     submissions = pgTable("submissions", {
       id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
       listingId: text("listing_id").notNull().references(() => listings.id),
-      referrerId: text("referrer_id").notNull().references(() => users.id),
+      affiliateId: text("affiliate_id").notNull().references(() => users.id),
       // Lead info
       leadName: text("lead_name").notNull(),
       leadEmail: text("lead_email").notNull(),
@@ -87221,13 +87232,14 @@ var init_schema15 = __esm({
       status: text("status", {
         enum: ["pending", "reviewing", "accepted", "rejected", "closed", "forfeited"]
       }).notNull().default("pending"),
-      // Payment lifecycle
+      // Payment lifecycle — admin manages payouts
       paymentStatus: text("payment_status", {
         enum: ["unpaid", "deposit_paid", "fully_paid", "transferred", "refunded", "forfeited"]
       }).notNull().default("unpaid"),
       depositAmount: real("deposit_amount"),
       finalAmount: real("final_amount"),
       payoutAmount: real("payout_amount"),
+      adminNotes: text("admin_notes"),
       stripePaymentIntentId: text("stripe_payment_intent_id"),
       stripeTransferId: text("stripe_transfer_id"),
       paymentDeadline: timestamp("payment_deadline"),
@@ -87236,6 +87248,29 @@ var init_schema15 = __esm({
       disclosureSignedAt: timestamp("disclosure_signed_at"),
       createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date()),
       updatedAt: timestamp("updated_at").$defaultFn(() => /* @__PURE__ */ new Date())
+    });
+    referralOverrides = pgTable("referral_overrides", {
+      id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+      affiliateId: text("affiliate_id").notNull().references(() => users.id),
+      // earner of override
+      referredUserId: text("referred_user_id").notNull().references(() => users.id),
+      submissionId: text("submission_id").references(() => submissions.id),
+      overridePercent: real("override_percent").notNull().default(10),
+      // % of referred user's payout
+      overrideAmount: real("override_amount").notNull().default(0),
+      status: text("status", { enum: ["pending", "paid", "forfeited"] }).notNull().default("pending"),
+      createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date())
+    });
+    learningResources = pgTable("learning_resources", {
+      id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+      title: text("title").notNull(),
+      description: text("description"),
+      url: text("url"),
+      videoUrl: text("video_url"),
+      category: text("category").notNull().default("general"),
+      order: integer2("order").notNull().default(0),
+      published: boolean4("published").notNull().default(true),
+      createdAt: timestamp("created_at").$defaultFn(() => /* @__PURE__ */ new Date())
     });
   }
 });
@@ -87528,6 +87563,11 @@ __export(auth_exports, {
   auth: () => auth,
   getAuth: () => getAuth
 });
+function generateReferralCode(name2, id) {
+  const prefix = name2.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase();
+  const suffix = id.slice(-4).toUpperCase();
+  return `${prefix}${suffix}`;
+}
 function getAuth() {
   if (!_auth) {
     const db2 = getDb();
@@ -87539,25 +87579,64 @@ function getAuth() {
         enabled: true,
         requireEmailVerification: false
       },
+      socialProviders: {
+        ...process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET
+          }
+        } : {}
+      },
       secret: process.env.BETTER_AUTH_SECRET || "fallback-secret-change-me",
       trustedOrigins: (request) => {
         const origin = request?.headers.get("origin");
         return origin ? [origin, "*"] : ["*"];
       },
-      plugins: [bearer()],
+      plugins: [
+        bearer(),
+        magicLink({
+          sendMagicLink: async ({ email: email3, token, url: url2 }) => {
+            try {
+              const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+              await sendEmail2({
+                to: email3,
+                subject: "Your Safe Refer sign-in link",
+                html: `
+                  <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+                      <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
+                      </div>
+                      <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
+                    </div>
+                    <h2 style="color:#0f172a;margin:0 0 8px;">Your sign-in link</h2>
+                    <p style="color:#64748b;margin:0 0 24px;">Click below to sign in. This link expires in 10 minutes and can only be used once.</p>
+                    <a href="${url2}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">Sign In to Safe Refer</a>
+                    <p style="color:#94a3b8;font-size:12px;margin-top:28px;">If you didn't request this, ignore this email.</p>
+                  </div>
+                `
+              });
+            } catch (e) {
+              console.error("[auth] Failed to send magic link:", e);
+            }
+          }
+        })
+      ],
       databaseHooks: {
         user: {
           create: {
             async after(user2) {
+              const referralCode = generateReferralCode(user2.name, user2.id);
               try {
                 await db2.insert(users).values({
                   id: user2.id,
                   name: user2.name,
                   email: user2.email,
                   emailVerified: false,
-                  role: "referrer",
+                  role: "affiliate",
                   isAdmin: false,
                   applicationStatus: "incomplete",
+                  referralCode,
                   payoutEnabled: false,
                   w9Completed: false,
                   createdAt: /* @__PURE__ */ new Date(),
@@ -87570,13 +87649,18 @@ function getAuth() {
                 const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
                 await sendEmail2({
                   to: user2.email,
-                  subject: "Welcome to Safe Refer!",
+                  subject: "Welcome to Safe Refer",
                   html: `
-                    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-                      <h2 style="color: #0EA5E9;">Welcome to Safe Refer</h2>
-                      <p>Hi ${user2.name},</p>
-                      <p>Your account is ready. Complete your profile to start submitting referrals and earning money.</p>
-                      <a href="${process.env.WEBSITE_URL || process.env.BETTER_AUTH_URL}/onboarding" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Complete Your Profile</a>
+                    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+                      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+                        <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                          <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
+                        </div>
+                        <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
+                      </div>
+                      <h2 style="color:#0f172a;margin:0 0 8px;">Welcome, ${user2.name}</h2>
+                      <p style="color:#64748b;margin:0 0 24px;">Your account is ready. Complete your profile to get started.</p>
+                      <a href="${process.env.WEBSITE_URL || process.env.BETTER_AUTH_URL}/onboarding" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;">Complete Your Profile</a>
                     </div>
                   `
                 });
@@ -90107,9 +90191,12 @@ var listings2 = new Hono2().get("/", requireAuth, requireApproved, async (c) => 
   return c.json({ listing }, 200);
 }).post("/", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) {
+    return c.json({ error: "Only businesses can post offers" }, 403);
+  }
   const body = await c.req.json();
   const [listing] = await db.insert(listings).values({
-    posterId: user2.id,
+    businessId: user2.id,
     title: body.title,
     description: body.description,
     industry: body.industry,
@@ -90118,8 +90205,10 @@ var listings2 = new Hono2().get("/", requireAuth, requireApproved, async (c) => 
     payoutAmount: body.payoutAmount,
     payoutTrigger: body.payoutTrigger,
     payoutDeadlineDays: body.payoutDeadlineDays ?? 30,
-    posterName: user2.name,
-    posterCompany: user2.companyName ?? null
+    requirements: body.requirements ?? null,
+    targetAudience: body.targetAudience ?? null,
+    businessName: user2.name,
+    businessCompany: user2.companyName ?? null
   }).returning();
   return c.json({ listing }, 201);
 }).patch("/:id", requireAuth, requireApproved, async (c) => {
@@ -90127,23 +90216,66 @@ var listings2 = new Hono2().get("/", requireAuth, requireApproved, async (c) => 
   const { id } = c.req.param();
   const [existing] = await db.select().from(listings).where(eq(listings.id, id));
   if (!existing) return c.json({ error: "Not found" }, 404);
-  if (existing.posterId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  if (existing.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
   const body = await c.req.json();
-  const [updated] = await db.update(listings).set({ ...body, updatedAt: /* @__PURE__ */ new Date() }).where(eq(listings.id, id)).returning();
+  const allowed2 = [
+    "title",
+    "description",
+    "industry",
+    "dealType",
+    "location",
+    "payoutAmount",
+    "payoutTrigger",
+    "payoutDeadlineDays",
+    "requirements",
+    "targetAudience",
+    "status"
+  ];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [updated] = await db.update(listings).set(updates).where(eq(listings.id, id)).returning();
   return c.json({ listing: updated }, 200);
 }).get("/mine/all", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
-  const rows = await db.select().from(listings).where(eq(listings.posterId, user2.id)).orderBy(desc(listings.createdAt));
+  const rows = await db.select().from(listings).where(eq(listings.businessId, user2.id)).orderBy(desc(listings.createdAt));
   return c.json({ listings: rows }, 200);
+}).get("/:id/submissions", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  const { id } = c.req.param();
+  const [listing] = await db.select().from(listings).where(eq(listings.id, id));
+  if (!listing) return c.json({ error: "Not found" }, 404);
+  if (listing.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const rows = await db.select().from(submissions).where(eq(submissions.listingId, id)).orderBy(desc(submissions.createdAt));
+  return c.json({ submissions: rows }, 200);
+}).get("/mine/analytics", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const myListings = await db.select().from(listings).where(eq(listings.businessId, user2.id));
+  const allSubs = await db.select().from(submissions);
+  const myListingIds = new Set(myListings.map((l) => l.id));
+  const mySubs = allSubs.filter((s) => myListingIds.has(s.listingId));
+  return c.json({
+    totalListings: myListings.length,
+    activeListings: myListings.filter((l) => l.status === "active").length,
+    totalSubmissions: mySubs.length,
+    pendingReview: mySubs.filter((s) => s.status === "pending" || s.status === "reviewing").length,
+    accepted: mySubs.filter((s) => s.status === "accepted").length,
+    rejected: mySubs.filter((s) => s.status === "rejected").length,
+    closed: mySubs.filter((s) => s.status === "closed").length,
+    totalPaidOut: myListings.reduce((a, l) => a + l.totalPaidOut, 0)
+  }, 200);
 });
 
 // src/api/routes/submissions.ts
 init_database();
 init_schema15();
 init_drizzle_orm();
-init_email();
 var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
+  if (user2.role !== "affiliate" && !user2.isAdmin) {
+    return c.json({ error: "Only affiliates can submit leads" }, 403);
+  }
   const body = await c.req.json();
   const [listing] = await db.select().from(listings).where(eq(listings.id, body.listingId));
   if (!listing) return c.json({ error: "Listing not found" }, 404);
@@ -90153,7 +90285,7 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
   deadline.setDate(deadline.getDate() + listing.payoutDeadlineDays);
   const [submission] = await db.insert(submissions).values({
     listingId: body.listingId,
-    referrerId: user2.id,
+    affiliateId: user2.id,
     leadName: body.leadName,
     leadEmail: body.leadEmail,
     leadPhone: body.leadPhone ?? null,
@@ -90165,23 +90297,34 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
     payoutAmount: listing.payoutAmount,
     paymentDeadline: deadline
   }).returning();
-  await db.update(listings).set({
-    totalSubmissions: listing.totalSubmissions + 1,
-    updatedAt: /* @__PURE__ */ new Date()
-  }).where(eq(listings.id, body.listingId));
+  await db.update(listings).set({ totalSubmissions: listing.totalSubmissions + 1, updatedAt: /* @__PURE__ */ new Date() }).where(eq(listings.id, body.listingId));
   return c.json({ submission }, 201);
 }).get("/mine", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
-  const rows = await db.select().from(submissions).where(eq(submissions.referrerId, user2.id)).orderBy(desc(submissions.createdAt));
-  return c.json({ submissions: rows }, 200);
+  const rows = await db.select().from(submissions).where(eq(submissions.affiliateId, user2.id)).orderBy(desc(submissions.createdAt));
+  const withListings = await Promise.all(rows.map(async (s) => {
+    const [listing] = await db.select({ title: listings.title, industry: listings.industry }).from(listings).where(eq(listings.id, s.listingId));
+    return { ...s, listingTitle: listing?.title, listingIndustry: listing?.industry };
+  }));
+  return c.json({ submissions: withListings }, 200);
+}).get("/incoming", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const myListings = await db.select({ id: listings.id, title: listings.title }).from(listings).where(eq(listings.businessId, user2.id));
+  const myListingIds = myListings.map((l) => l.id);
+  if (!myListingIds.length) return c.json({ submissions: [] }, 200);
+  const allSubs = await db.select().from(submissions).orderBy(desc(submissions.createdAt));
+  const filtered = allSubs.filter((s) => myListingIds.includes(s.listingId));
+  const listingMap = Object.fromEntries(myListings.map((l) => [l.id, l.title]));
+  return c.json({ submissions: filtered.map((s) => ({ ...s, listingTitle: listingMap[s.listingId] })) }, 200);
 }).get("/:id", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
   const { id } = c.req.param();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
   if (!submission) return c.json({ error: "Not found" }, 404);
-  if (submission.referrerId !== user2.id && !user2.isAdmin) {
+  if (submission.affiliateId !== user2.id && !user2.isAdmin) {
     const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
-    if (listing?.posterId !== user2.id) return c.json({ error: "Forbidden" }, 403);
+    if (listing?.businessId !== user2.id) return c.json({ error: "Forbidden" }, 403);
   }
   return c.json({ submission }, 200);
 }).patch("/:id/status", requireAuth, requireApproved, async (c) => {
@@ -90191,26 +90334,22 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
   if (!submission) return c.json({ error: "Not found" }, 404);
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
-  if (listing?.posterId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
-  const [updated] = await db.update(submissions).set({ status: body.status, updatedAt: /* @__PURE__ */ new Date() }).where(eq(submissions.id, id)).returning();
-  try {
-    const [referrer] = await db.select().from(users).where(eq(users.id, submission.referrerId));
-    if (referrer) {
-      const emailData = submissionStatusEmail(referrer.name, submission.leadName, body.status);
-      await sendEmail({ to: referrer.email, ...emailData });
-    }
-  } catch (e) {
-    console.error("Failed to send status email", e);
-  }
+  if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const allowed2 = ["status", "adminNotes"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [updated] = await db.update(submissions).set(updates).where(eq(submissions.id, id)).returning();
   return c.json({ submission: updated }, 200);
-}).get("/listing/:listingId", requireAuth, requireApproved, async (c) => {
+}).get("/poster", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
-  const { listingId } = c.req.param();
-  const [listing] = await db.select().from(listings).where(eq(listings.id, listingId));
-  if (!listing) return c.json({ error: "Not found" }, 404);
-  if (listing.posterId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
-  const rows = await db.select().from(submissions).where(eq(submissions.listingId, listingId)).orderBy(desc(submissions.createdAt));
-  return c.json({ submissions: rows }, 200);
+  const myListings = await db.select({ id: listings.id, title: listings.title }).from(listings).where(eq(listings.businessId, user2.id));
+  const myListingIds = myListings.map((l) => l.id);
+  if (!myListingIds.length) return c.json({ submissions: [] }, 200);
+  const allSubs = await db.select().from(submissions).orderBy(desc(submissions.createdAt));
+  const filtered = allSubs.filter((s) => myListingIds.includes(s.listingId));
+  const listingMap = Object.fromEntries(myListings.map((l) => [l.id, l.title]));
+  return c.json({ submissions: filtered.map((s) => ({ ...s, listingTitle: listingMap[s.listingId] })) }, 200);
 });
 
 // src/api/routes/users.ts
@@ -90221,20 +90360,27 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   const user2 = c.get("user");
   const [profile] = await db.select().from(users).where(eq(users.id, user2.id));
   if (!profile) {
+    const referralCode = generateReferralCode2(user2.name, user2.id);
     const [newProfile] = await db.insert(users).values({
       id: user2.id,
       name: user2.name,
       email: user2.email,
       emailVerified: false,
-      role: "referrer",
+      role: "affiliate",
       isAdmin: false,
       applicationStatus: "incomplete",
+      referralCode,
       payoutEnabled: false,
       w9Completed: false,
       createdAt: /* @__PURE__ */ new Date(),
       updatedAt: /* @__PURE__ */ new Date()
     }).onConflictDoNothing().returning();
     return c.json({ user: newProfile }, 200);
+  }
+  if (!profile.referralCode) {
+    const referralCode = generateReferralCode2(profile.name, profile.id);
+    const [updated] = await db.update(users).set({ referralCode, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user2.id)).returning();
+    return c.json({ user: updated }, 200);
   }
   return c.json({ user: profile }, 200);
 }).patch("/me", requireAuth, async (c) => {
@@ -90251,6 +90397,8 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
     "companyWebsite",
     "companySize",
     "industry",
+    "businessDescription",
+    "ein",
     "idFrontUrl",
     "idBackUrl",
     "selfieUrl",
@@ -90268,7 +90416,10 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   }
   updates.updatedAt = /* @__PURE__ */ new Date();
   const [current] = await db.select().from(users).where(eq(users.id, user2.id));
-  if (current?.applicationStatus === "incomplete" && body.phone && body.w9Completed) {
+  if (current?.role === "affiliate" && current?.applicationStatus === "incomplete" && body.phone) {
+    updates.applicationStatus = "approved";
+  }
+  if (current?.role === "business" && current?.applicationStatus === "incomplete" && body.companyName && body.phone) {
     updates.applicationStatus = "submitted";
   }
   const [updated] = await db.update(users).set(updates).where(eq(users.id, user2.id)).returning();
@@ -90282,19 +90433,124 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   }
   const [updated] = await db.update(users).set({ applicationStatus: "submitted", updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user2.id)).returning();
   return c.json({ user: updated }, 200);
+}).post("/me/set-role", requireAuth, async (c) => {
+  const user2 = c.get("user");
+  const body = await c.req.json();
+  const role2 = body.role;
+  if (!["affiliate", "business"].includes(role2)) {
+    return c.json({ error: "Invalid role" }, 400);
+  }
+  const [current] = await db.select().from(users).where(eq(users.id, user2.id));
+  if (current?.applicationStatus !== "incomplete") {
+    return c.json({ error: "Role already set" }, 400);
+  }
+  const [updated] = await db.update(users).set({ role: role2, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user2.id)).returning();
+  return c.json({ user: updated }, 200);
 }).get("/earnings", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
-  const allSubs = await db.select().from(submissions).where(eq(submissions.referrerId, user2.id));
+  const allSubs = await db.select().from(submissions).where(eq(submissions.affiliateId, user2.id)).orderBy(desc(submissions.createdAt));
   const totalEarned = allSubs.filter((s) => s.paymentStatus === "transferred" || s.paymentStatus === "fully_paid").reduce((acc, s) => acc + (s.payoutAmount ?? 0), 0);
   const pendingPayout = allSubs.filter((s) => s.status === "accepted" && s.paymentStatus !== "transferred" && s.paymentStatus !== "fully_paid").reduce((acc, s) => acc + (s.payoutAmount ?? 0), 0);
   const closedDeals = allSubs.filter((s) => s.status === "closed").length;
   const approvedLeads = allSubs.filter((s) => s.status === "accepted").length;
-  const [referrer] = await db.select().from(users).where(eq(users.id, user2.id));
+  const overrides = await db.select().from(referralOverrides).where(eq(referralOverrides.affiliateId, user2.id));
+  const overrideEarned = overrides.filter((o) => o.status === "paid").reduce((acc, o) => acc + (o.overrideAmount ?? 0), 0);
+  const overridePending = overrides.filter((o) => o.status === "pending").reduce((acc, o) => acc + (o.overrideAmount ?? 0), 0);
+  const [affiliate] = await db.select().from(users).where(eq(users.id, user2.id));
   return c.json({
-    stats: { totalEarned, pendingPayout, closedDeals, approvedLeads },
-    payoutEnabled: referrer?.payoutEnabled ?? false
+    stats: {
+      totalEarned,
+      pendingPayout,
+      closedDeals,
+      approvedLeads,
+      overrideEarned,
+      overridePending,
+      totalWithOverrides: totalEarned + overrideEarned
+    },
+    recentSubmissions: allSubs.slice(0, 10),
+    payoutEnabled: affiliate?.payoutEnabled ?? false,
+    referralCode: affiliate?.referralCode ?? null
+  }, 200);
+}).get("/dashboard-summary", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  const dbUser = await db.select().from(users).where(eq(users.id, user2.id));
+  const profile = dbUser[0];
+  if (profile?.role === "business") {
+    const myListings = await db.select().from(listings).where(eq(listings.businessId, user2.id));
+    const listingIds = myListings.map((l) => l.id);
+    let allSubs2 = [];
+    if (listingIds.length > 0) {
+      allSubs2 = await db.select({
+        id: submissions.id,
+        leadName: submissions.leadName,
+        leadEmail: submissions.leadEmail,
+        status: submissions.status,
+        payoutAmount: submissions.payoutAmount,
+        createdAt: submissions.createdAt,
+        listingTitle: listings.title,
+        affiliateName: users.name
+      }).from(submissions).leftJoin(listings, eq(submissions.listingId, listings.id)).leftJoin(users, eq(submissions.affiliateId, users.id)).where(eq(listings.businessId, user2.id)).orderBy(desc(submissions.createdAt));
+    }
+    return c.json({
+      activeListings: myListings.filter((l) => l.status === "active").length,
+      totalSubmissions: allSubs2.length,
+      pendingSubmissions: allSubs2.filter((s) => s.status === "pending").length,
+      acceptedSubmissions: allSubs2.filter((s) => s.status === "accepted").length,
+      recentSubmissions: allSubs2.slice(0, 5)
+    }, 200);
+  }
+  const allSubs = await db.select({
+    id: submissions.id,
+    leadName: submissions.leadName,
+    status: submissions.status,
+    payoutAmount: submissions.payoutAmount,
+    paymentStatus: submissions.paymentStatus,
+    createdAt: submissions.createdAt,
+    listingTitle: listings.title,
+    businessName: users.name
+  }).from(submissions).leftJoin(listings, eq(submissions.listingId, listings.id)).leftJoin(users, eq(listings.businessId, users.id)).where(eq(submissions.affiliateId, user2.id)).orderBy(desc(submissions.createdAt));
+  const totalSubmissions = allSubs.length;
+  const acceptedSubmissions = allSubs.filter((s) => s.status === "accepted").length;
+  const totalEarned = allSubs.filter((s) => s.status === "accepted" && s.paymentStatus === "transferred").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
+  const pendingPayout = allSubs.filter((s) => s.status === "accepted" && s.paymentStatus !== "transferred").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
+  return c.json({
+    totalEarned,
+    pendingPayout,
+    totalSubmissions,
+    acceptedSubmissions,
+    referralCode: profile?.referralCode,
+    referralUrl: `${process.env.WEBSITE_URL || ""}/sign-up?ref=${profile?.referralCode}`,
+    recentSubmissions: allSubs.slice(0, 5)
+  }, 200);
+}).get("/referrals", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  const [affiliate] = await db.select().from(users).where(eq(users.id, user2.id));
+  const referred = await db.select().from(users).where(eq(users.referredBy, user2.id));
+  const overrides = await db.select().from(referralOverrides).where(eq(referralOverrides.affiliateId, user2.id));
+  return c.json({
+    referralCode: affiliate?.referralCode,
+    referralUrl: `${process.env.WEBSITE_URL || ""}/sign-up?ref=${affiliate?.referralCode}`,
+    totalReferred: referred.length,
+    activeAffiliates: referred.filter((u) => u.applicationStatus === "approved").length,
+    overrides: {
+      total: overrides.length,
+      earned: overrides.filter((o) => o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0),
+      pending: overrides.filter((o) => o.status === "pending").reduce((a, o) => a + o.overrideAmount, 0)
+    },
+    referred: referred.map((u) => ({
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      applicationStatus: u.applicationStatus,
+      createdAt: u.createdAt
+    }))
   }, 200);
 });
+function generateReferralCode2(name2, id) {
+  const prefix = name2.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase();
+  const suffix = id.slice(-4).toUpperCase();
+  return `${prefix}${suffix}`;
+}
 
 // src/api/routes/admin.ts
 init_database();
@@ -90306,12 +90562,21 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
   const [listingCount] = await db.select({ count: count() }).from(listings);
   const [submissionCount] = await db.select({ count: count() }).from(submissions);
   const pendingApps = await db.select().from(users).where(eq(users.applicationStatus, "submitted"));
+  const affiliates = await db.select({ count: count() }).from(users).where(eq(users.role, "affiliate"));
+  const businesses = await db.select({ count: count() }).from(users).where(eq(users.role, "business"));
+  const allSubs = await db.select().from(submissions);
+  const totalPaid = allSubs.filter((s) => s.paymentStatus === "transferred" || s.paymentStatus === "fully_paid").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
+  const pendingPayouts = allSubs.filter((s) => s.status === "accepted" && s.paymentStatus === "unpaid").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
   return c.json({
     stats: {
       users: userCount.count,
+      affiliates: affiliates[0].count,
+      businesses: businesses[0].count,
       listings: listingCount.count,
       submissions: submissionCount.count,
-      pendingApplications: pendingApps.length
+      pendingApplications: pendingApps.length,
+      totalPaidOut: totalPaid,
+      pendingPayouts
     }
   }, 200);
 }).get("/users", requireAuth, requireAdmin, async (c) => {
@@ -90341,12 +90606,81 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
   return c.json({ listings: rows }, 200);
 }).get("/submissions", requireAuth, requireAdmin, async (c) => {
   const rows = await db.select().from(submissions).orderBy(desc(submissions.createdAt));
-  return c.json({ submissions: rows }, 200);
+  const enriched = await Promise.all(rows.map(async (s) => {
+    const [listing] = await db.select({ title: listings.title }).from(listings).where(eq(listings.id, s.listingId));
+    const [affiliate] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, s.affiliateId));
+    return { ...s, listingTitle: listing?.title, affiliateName: affiliate?.name, affiliateEmail: affiliate?.email };
+  }));
+  return c.json({ submissions: enriched }, 200);
+}).patch("/submissions/:id/payment", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["paymentStatus", "payoutAmount", "adminNotes", "stripeTransferId"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [updated] = await db.update(submissions).set(updates).where(eq(submissions.id, id)).returning();
+  if (!updated) return c.json({ error: "Not found" }, 404);
+  return c.json({ submission: updated }, 200);
 }).patch("/users/:userId/admin", requireAuth, requireAdmin, async (c) => {
   const { userId } = c.req.param();
   const body = await c.req.json();
   const [user2] = await db.update(users).set({ isAdmin: body.isAdmin, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, userId)).returning();
   return c.json({ user: user2 }, 200);
+}).patch("/users/:userId", requireAuth, requireAdmin, async (c) => {
+  const { userId } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["role", "applicationStatus", "isAdmin", "payoutEnabled"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [user2] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+  return c.json({ user: user2 }, 200);
+}).get("/learning", requireAuth, requireAdmin, async (c) => {
+  const resources = await db.select().from(learningResources).orderBy(learningResources.order);
+  return c.json({ resources }, 200);
+}).post("/learning", requireAuth, requireAdmin, async (c) => {
+  const body = await c.req.json();
+  const [resource] = await db.insert(learningResources).values({
+    title: body.title,
+    description: body.description ?? null,
+    url: body.url ?? null,
+    videoUrl: body.videoUrl ?? null,
+    category: body.category ?? "general",
+    order: body.order ?? 0,
+    published: body.published ?? true
+  }).returning();
+  return c.json({ resource }, 201);
+}).patch("/learning/:id", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["title", "description", "url", "videoUrl", "category", "order", "published"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  const [resource] = await db.update(learningResources).set(updates).where(eq(learningResources.id, id)).returning();
+  return c.json({ resource }, 200);
+}).delete("/learning/:id", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  await db.delete(learningResources).where(eq(learningResources.id, id));
+  return c.json({ ok: true }, 200);
+}).get("/payouts", requireAuth, requireAdmin, async (c) => {
+  const subs = await db.select({
+    id: submissions.id,
+    leadName: submissions.leadName,
+    leadEmail: submissions.leadEmail,
+    listingId: submissions.listingId,
+    affiliateId: submissions.affiliateId,
+    payoutAmount: submissions.payoutAmount,
+    paymentStatus: submissions.paymentStatus,
+    createdAt: submissions.createdAt,
+    listingTitle: listings.title,
+    affiliateName: users.name
+  }).from(submissions).leftJoin(listings, eq(submissions.listingId, listings.id)).leftJoin(users, eq(submissions.affiliateId, users.id)).where(eq(submissions.status, "accepted")).orderBy(desc(submissions.createdAt));
+  return c.json({ payouts: subs }, 200);
+}).patch("/payouts/:id/mark-paid", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  const [updated] = await db.update(submissions).set({ paymentStatus: "transferred" }).where(eq(submissions.id, id)).returning();
+  return c.json({ submission: updated }, 200);
 });
 
 // ../../node_modules/.bun/stripe@22.2.0+9d66e4116c02361d/node_modules/stripe/esm/Error.js
@@ -107893,6 +108227,32 @@ var webhooksRouter = new Hono2().post("/stripe", async (c) => {
   return c.json({ received: true }, 200);
 });
 
+// src/api/routes/affiliate.ts
+init_database();
+init_schema15();
+init_drizzle_orm();
+var affiliateRouter = new Hono2().get("/learning", requireAuth, requireApproved, async (c) => {
+  const resources = await db.select().from(learningResources).where(eq(learningResources.published, true)).orderBy(learningResources.order);
+  const byCategory = {};
+  for (const r of resources) {
+    if (!byCategory[r.category]) byCategory[r.category] = [];
+    byCategory[r.category].push(r);
+  }
+  return c.json({ resources, byCategory }, 200);
+}).get("/referral-link", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  const [affiliate] = await db.select().from(users).where(eq(users.id, user2.id));
+  const baseUrl = process.env.WEBSITE_URL || "";
+  return c.json({
+    referralCode: affiliate?.referralCode,
+    referralUrl: `${baseUrl}/sign-up?ref=${affiliate?.referralCode}`
+  }, 200);
+}).get("/overrides", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  const overrides = await db.select().from(referralOverrides).where(eq(referralOverrides.affiliateId, user2.id)).orderBy(desc(referralOverrides.createdAt));
+  return c.json({ overrides }, 200);
+});
+
 // src/api/index.ts
 init_drizzle_orm();
 var app = new Hono2().use(
@@ -107912,7 +108272,7 @@ var app = new Hono2().use(
   } catch (err) {
     return c.json({ ok: false, error: err?.message || String(err) }, 500);
   }
-}).use("*", authMiddleware).route("/users", usersRouter).route("/listings", listings2).route("/submissions", submissions2).route("/admin", adminRouter).route("/stripe", stripeRouter);
+}).use("*", authMiddleware).route("/users", usersRouter).route("/listings", listings2).route("/submissions", submissions2).route("/admin", adminRouter).route("/stripe", stripeRouter).route("/affiliate", affiliateRouter);
 var api_default = app;
 
 // api/index.ts

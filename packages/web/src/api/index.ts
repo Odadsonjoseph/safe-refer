@@ -7,6 +7,7 @@ import { usersRouter } from "./routes/users";
 import { adminRouter } from "./routes/admin";
 import { stripeRouter } from "./routes/stripe";
 import { webhooksRouter } from "./routes/webhooks";
+import { affiliateRouter } from "./routes/affiliate";
 import { sql } from "drizzle-orm";
 
 const app = new Hono()
@@ -17,17 +18,13 @@ const app = new Hono()
       exposeHeaders: ["set-auth-token"],
     })
   )
-  // Auth — lazy import so betterAuth() + drizzleAdapter() don't run at module load
   .on(["GET", "POST"], "/api/auth/*", async (c) => {
     const { auth } = await import("./auth");
     return auth.handler(c.req.raw);
   })
-  // Webhooks — raw body needed before basePath
   .route("/webhooks", webhooksRouter)
   .basePath("api")
-  // Health check — no auth middleware needed
   .get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200))
-  // DB connectivity test
   .get("/dbtest", async (c) => {
     try {
       const { db } = await import("./database");
@@ -37,13 +34,13 @@ const app = new Hono()
       return c.json({ ok: false, error: err?.message || String(err) }, 500);
     }
   })
-  // All other routes go through auth middleware
   .use("*", authMiddleware)
   .route("/users", usersRouter)
   .route("/listings", listings)
   .route("/submissions", submissions)
   .route("/admin", adminRouter)
-  .route("/stripe", stripeRouter);
+  .route("/stripe", stripeRouter)
+  .route("/affiliate", affiliateRouter);
 
 export type AppType = typeof app;
 export default app;
