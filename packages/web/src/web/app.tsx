@@ -2,7 +2,6 @@ import { Route, Switch, Redirect } from "wouter";
 import { Provider } from "./components/provider";
 import { AgentFeedback } from "@runablehq/website-runtime";
 import { useAuth } from "./lib/auth";
-import { useQuery } from "@tanstack/react-query";
 
 import Layout from "./components/layout";
 import SignIn from "./pages/sign-in";
@@ -28,32 +27,6 @@ function LoadingSpinner() {
   );
 }
 
-function useProfile() {
-  const { user, loading: authLoading } = useAuth();
-  const profile = useQuery({
-    queryKey: ["profile", user?.id],
-    queryFn: async () => {
-      const res = await fetch("/api/users/me", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("safe_refer_token") ?? ""}`,
-        },
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.user ?? null;
-    },
-    enabled: !!user,
-    staleTime: 30_000,
-    retry: 2,
-  });
-
-  return {
-    authUser: user,
-    profile: profile.data,
-    loading: authLoading || (!!user && profile.isLoading),
-  };
-}
-
 function ProtectedRoute({
   component: Component,
   adminOnly = false,
@@ -61,30 +34,31 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  const { authUser, profile, loading } = useProfile();
+  // useAuth now merges the DB profile (role, applicationStatus, etc.) into user
+  const { user, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
-  if (!authUser) return <Redirect to="/sign-in" />;
+  if (!user) return <Redirect to="/sign-in" />;
 
-  // Admins always get through — render without Layout if admin-only (admin has its own layout)
-  if (profile?.isAdmin) return adminOnly ? <Component /> : <Layout><Component /></Layout>;
+  // Admins always get through
+  if (user.isAdmin) return adminOnly ? <Component /> : <Layout><Component /></Layout>;
 
   if (adminOnly) return <Redirect to="/dashboard" />;
 
-  // Affiliates are auto-approved — only redirect if truly incomplete
-  if (profile?.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
-  // Businesses with submitted or rejected status go to pending
-  if (profile?.role === "business" && profile?.applicationStatus === "submitted") return <Redirect to="/pending" />;
-  if (profile?.role === "business" && profile?.applicationStatus === "rejected") return <Redirect to="/pending" />;
+  // Redirect until onboarding is done
+  if (user.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
+  // Business accounts pending approval go to waiting screen
+  if (user.role === "business" && user.applicationStatus === "submitted") return <Redirect to="/pending" />;
+  if (user.role === "business" && user.applicationStatus === "rejected") return <Redirect to="/pending" />;
 
-  return adminOnly ? <Component /> : <Layout><Component /></Layout>;
+  return <Layout><Component /></Layout>;
 }
 
 function GuestRoute({ component: Component }: { component: React.ComponentType }) {
-  const { authUser, loading } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
-  if (authUser) return <Redirect to="/dashboard" />;
+  if (user) return <Redirect to="/dashboard" />;
   return <Component />;
 }
 

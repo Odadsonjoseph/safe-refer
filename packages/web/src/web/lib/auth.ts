@@ -1,3 +1,4 @@
+import * as React from "react";
 import { createAuthClient } from "better-auth/react";
 import { magicLinkClient } from "better-auth/client/plugins";
 
@@ -45,11 +46,33 @@ export type AuthUser = {
 };
 
 export function useAuth() {
-  const { data: session, isPending: loading } = authClient.useSession();
-  const user = session?.user as AuthUser | null | undefined;
+  const { data: session, isPending: authLoading } = authClient.useSession();
+  const authUser = session?.user as AuthUser | null | undefined;
+
+  // Fetch DB profile to get real role, applicationStatus, etc.
+  const [profile, setProfile] = React.useState<AuthUser | null>(null);
+  const [profileLoading, setProfileLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!authUser?.id) { setProfile(null); return; }
+    setProfileLoading(true);
+    fetch("/api/users/me", {
+      headers: { Authorization: `Bearer ${getToken()}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => setProfile(d?.user ?? null))
+      .catch(() => setProfile(null))
+      .finally(() => setProfileLoading(false));
+  }, [authUser?.id]);
+
+  // Merge auth user with DB profile — profile wins for role/status fields
+  const user: AuthUser | null = authUser
+    ? { ...authUser, ...(profile ?? {}) }
+    : null;
+
   return {
-    user: user ?? null,
-    loading,
+    user,
+    loading: authLoading || (!!authUser && profileLoading),
     session,
   };
 }
