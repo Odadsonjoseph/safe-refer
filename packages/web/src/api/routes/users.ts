@@ -115,7 +115,7 @@ export const usersRouter = new Hono<AppEnv>()
     return c.json({ user: updated }, 200);
   })
 
-  // Set role during onboarding
+  // Set role during onboarding — handles full profile + auto-approval logic
   .post("/me/set-role", requireAuth, async (c) => {
     const user = c.get("user")!;
     const body = await c.req.json();
@@ -123,15 +123,57 @@ export const usersRouter = new Hono<AppEnv>()
     if (!["affiliate", "business"].includes(role)) {
       return c.json({ error: "Invalid role" }, 400);
     }
+
     const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
-    if (current?.applicationStatus !== "incomplete") {
+    // Allow re-submission if still incomplete
+    if (current && current.applicationStatus !== "incomplete") {
       return c.json({ error: "Role already set" }, 400);
     }
+
+    const updates: Record<string, any> = {
+      role,
+      updatedAt: new Date(),
+    };
+
+    if (role === "affiliate") {
+      // Affiliates get auto-approved
+      if (body.phone) updates.phone = body.phone;
+      if (body.bio) updates.bio = body.bio;
+      updates.applicationStatus = "approved";
+    } else {
+      // Businesses go to submitted for admin review
+      if (body.phone) updates.phone = body.phone;
+      if (body.companyName) updates.companyName = body.companyName;
+      if (body.website) updates.companyWebsite = body.website;
+      if (body.industry) updates.industry = body.industry;
+      if (body.description) updates.businessDescription = body.description;
+      updates.applicationStatus = "submitted";
+    }
+
+    // Handle referral code from sign-up URL (?ref=CODE)
+    const refCode = body.referredBy as string | undefined;
+    if (refCode) {
+      // Look up the affiliate with this referral code
+      const [referrer] = await db
+        .select()
+        .from(schema.users)
+        .where(eq(schema.users.referralCode, refCode)) as any[];
+      if (referrer) {
+        updates.referredBy = referrer.id;
+      }
+    }
+
+    // Ensure user has a referral code
+    if (!current?.referralCode) {
+      updates.referralCode = generateReferralCode(user.name, user.id);
+    }
+
     const [updated] = await db
       .update(schema.users)
-      .set({ role, updatedAt: new Date() })
+      .set(updates)
       .where(eq(schema.users.id, user.id))
       .returning();
+
     return c.json({ user: updated }, 200);
   })
 

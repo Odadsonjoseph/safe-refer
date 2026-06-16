@@ -5,6 +5,7 @@ import { authClient } from "../lib/auth";
 export default function Onboarding() {
   const [, navigate] = useLocation();
   const role = sessionStorage.getItem("sr_pending_role") as "affiliate" | "business" | null;
+  const refCode = sessionStorage.getItem("sr_ref_code") ?? undefined;
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,13 +38,14 @@ export default function Onboarding() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ role: "affiliate", phone, bio }),
+        body: JSON.stringify({ role: "affiliate", phone, bio, referredBy: refCode }),
       });
       if (!res.ok) {
         const d = await res.json();
         throw new Error(d.error || "Failed to complete profile");
       }
       sessionStorage.removeItem("sr_pending_role");
+      sessionStorage.removeItem("sr_ref_code");
       navigate("/dashboard");
     } catch (err: any) {
       setError(err.message);
@@ -72,6 +74,7 @@ export default function Onboarding() {
           industry,
           description,
           phone: bizPhone,
+          referredBy: refCode,
         }),
       });
       if (!res.ok) {
@@ -79,6 +82,7 @@ export default function Onboarding() {
         throw new Error(d.error || "Failed to submit application");
       }
       sessionStorage.removeItem("sr_pending_role");
+      sessionStorage.removeItem("sr_ref_code");
       navigate("/pending");
     } catch (err: any) {
       setError(err.message);

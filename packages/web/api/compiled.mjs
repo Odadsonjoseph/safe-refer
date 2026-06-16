@@ -90441,10 +90441,36 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
     return c.json({ error: "Invalid role" }, 400);
   }
   const [current] = await db.select().from(users).where(eq(users.id, user2.id));
-  if (current?.applicationStatus !== "incomplete") {
+  if (current && current.applicationStatus !== "incomplete") {
     return c.json({ error: "Role already set" }, 400);
   }
-  const [updated] = await db.update(users).set({ role: role2, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user2.id)).returning();
+  const updates = {
+    role: role2,
+    updatedAt: /* @__PURE__ */ new Date()
+  };
+  if (role2 === "affiliate") {
+    if (body.phone) updates.phone = body.phone;
+    if (body.bio) updates.bio = body.bio;
+    updates.applicationStatus = "approved";
+  } else {
+    if (body.phone) updates.phone = body.phone;
+    if (body.companyName) updates.companyName = body.companyName;
+    if (body.website) updates.companyWebsite = body.website;
+    if (body.industry) updates.industry = body.industry;
+    if (body.description) updates.businessDescription = body.description;
+    updates.applicationStatus = "submitted";
+  }
+  const refCode = body.referredBy;
+  if (refCode) {
+    const [referrer] = await db.select().from(users).where(eq(users.referralCode, refCode));
+    if (referrer) {
+      updates.referredBy = referrer.id;
+    }
+  }
+  if (!current?.referralCode) {
+    updates.referralCode = generateReferralCode2(user2.name, user2.id);
+  }
+  const [updated] = await db.update(users).set(updates).where(eq(users.id, user2.id)).returning();
   return c.json({ user: updated }, 200);
 }).get("/earnings", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
