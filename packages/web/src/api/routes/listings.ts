@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { AppEnv } from "../types";
 import { db } from "../database";
 import * as schema from "../database/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
 export const listings = new Hono<AppEnv>()
@@ -100,6 +100,18 @@ export const listings = new Hono<AppEnv>()
       .where(eq(schema.submissions.listingId, id))
       .orderBy(desc(schema.submissions.createdAt));
     return c.json({ submissions: rows }, 200);
+  })
+
+  // Business: delete a listing
+  .delete("/:id", requireAuth, requireApproved, async (c) => {
+    const user = c.get("user")!;
+    const { id } = c.req.param();
+    const [existing] = await db.select().from(schema.listings).where(eq(schema.listings.id, id));
+    if (!existing) return c.json({ error: "Not found" }, 404);
+    if (existing.businessId !== user.id && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
+    // soft delete — just close it
+    await db.update(schema.listings).set({ status: "closed", updatedAt: new Date() }).where(eq(schema.listings.id, id));
+    return c.json({ success: true }, 200);
   })
 
   // Business: analytics for their offers

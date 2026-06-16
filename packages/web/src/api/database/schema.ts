@@ -135,5 +135,22 @@ export const learningResources = pgTable("learning_resources", {
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
 });
 
+// ─── Business Posts ──────────────────────────────────────────────────────────
+export const posts = pgTable("posts", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  businessId: text("business_id").notNull().references(() => users.id),
+  businessName: text("business_name").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  type: text("type", { enum: ["announcement", "promotion", "update", "tip"] }).notNull().default("announcement"),
+  imageUrl: text("image_url"),
+  ctaText: text("cta_text"),
+  ctaUrl: text("cta_url"),
+  published: boolean("published").notNull().default(true),
+  pinnedUntil: timestamp("pinned_until"),
+  createdAt: timestamp("created_at").$defaultFn(() => new Date()),
+  updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
+});
+
 // ─── Auth (Better Auth generated tables) ─────────────────────────────────────
 export * from "./auth-schema";

@@ -18,6 +18,7 @@ import Payments from "./pages/payments";
 import Admin from "./pages/admin";
 import Referrals from "./pages/referrals";
 import Learning from "./pages/learning";
+import Posts from "./pages/posts";
 
 function LoadingSpinner() {
   return (
@@ -106,6 +107,7 @@ function App() {
         <Route path="/referrals" component={() => <ProtectedRoute component={Referrals} />} />
         <Route path="/learning" component={() => <ProtectedRoute component={Learning} />} />
         <Route path="/admin" component={() => <ProtectedRoute component={Admin} adminOnly />} />
+        <Route path="/posts" component={() => <ProtectedRoute component={Posts} />} />
         <Route path="/admin/:tab" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route component={() => <Redirect to="/sign-in" />} />
       </Switch>

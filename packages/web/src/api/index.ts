@@ -8,7 +8,38 @@ import { adminRouter } from "./routes/admin";
 import { stripeRouter } from "./routes/stripe";
 import { webhooksRouter } from "./routes/webhooks";
 import { affiliateRouter } from "./routes/affiliate";
+import { postsRouter } from "./routes/posts";
 import { sql } from "drizzle-orm";
+
+// Auto-migrate posts table
+async function ensurePostsTable() {
+  try {
+    const { db } = await import("./database");
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS posts (
+        id text PRIMARY KEY,
+        business_id text NOT NULL,
+        business_name text NOT NULL,
+        title text NOT NULL,
+        body text NOT NULL,
+        type text NOT NULL DEFAULT 'announcement',
+        image_url text,
+        cta_text text,
+        cta_url text,
+        published boolean NOT NULL DEFAULT true,
+        pinned_until timestamp,
+        created_at timestamp DEFAULT now(),
+        updated_at timestamp DEFAULT now()
+      )
+    `);
+  } catch (e: any) {
+    // Table may already exist or DB unavailable — non-fatal
+    if (!e?.message?.includes("already exists")) {
+      console.warn("[migrate] posts table:", e?.message);
+    }
+  }
+}
+ensurePostsTable();
 
 const app = new Hono()
   .use(
@@ -40,7 +71,8 @@ const app = new Hono()
   .route("/submissions", submissions)
   .route("/admin", adminRouter)
   .route("/stripe", stripeRouter)
-  .route("/affiliate", affiliateRouter);
+  .route("/affiliate", affiliateRouter)
+  .route("/posts", postsRouter);
 
 export type AppType = typeof app;
 export default app;
