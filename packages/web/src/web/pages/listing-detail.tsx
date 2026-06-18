@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { authClient } from "../lib/auth";
-import { DashboardLayout } from "../components/layout";
+import { useAuth } from "../lib/auth";
 import { useState } from "react";
 
 const DEAL_TYPE_LABELS: Record<string, string> = {
@@ -40,8 +40,7 @@ async function getToken() {
 export default function ListingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const { data: session } = authClient.useSession();
-  const user = session?.user as any;
+  const { user } = useAuth();
   const [showSubmit, setShowSubmit] = useState(false);
 
   const listingQuery = useQuery({
@@ -61,8 +60,7 @@ export default function ListingDetailPage() {
   const isBusiness = user?.role === "business";
 
   return (
-    <DashboardLayout>
-      <div className="max-w-2xl">
+    <div className="max-w-2xl">
         <button
           onClick={() => navigate("/listings")}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-6 transition"
@@ -211,7 +209,6 @@ export default function ListingDetailPage() {
           <SubmitLeadModal listing={l} onClose={() => setShowSubmit(false)} />
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

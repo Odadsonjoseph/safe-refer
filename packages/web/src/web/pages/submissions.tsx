@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../lib/auth";
-import { useSession } from "../hooks/useSession";
+import { useAuth } from "../lib/auth";
 
 interface Submission {
   id: string;
@@ -24,8 +24,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function Submissions() {
-  const { user } = useSession();
-  const role = (user as any)?.role as string;
+  const { user, loading: userLoading } = useAuth();
+  const role = user?.role as string;
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
@@ -37,23 +37,30 @@ export default function Submissions() {
     return (session as any)?.data?.session?.token;
   }
 
-  async function load() {
+  async function load(currentRole: string) {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch("/api/submissions", {
+      // Affiliates use /mine, businesses use /incoming
+      const endpoint = currentRole === "business"
+        ? "/api/submissions/incoming"
+        : "/api/submissions/mine";
+      const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const d = await res.json();
-        setSubmissions(d.submissions || d);
+        setSubmissions(d.submissions || []);
       }
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  // Wait until role is resolved before fetching
+  useEffect(() => {
+    if (!userLoading && role) load(role);
+  }, [userLoading, role]);
 
   async function updateStatus(id: string, status: "accepted" | "rejected") {
     setUpdating(true);
@@ -65,7 +72,7 @@ export default function Submissions() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
-        await load();
+        await load(role);
         setSelected(null);
       }
     } finally {

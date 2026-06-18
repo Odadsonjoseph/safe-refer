@@ -45,34 +45,75 @@ export type AuthUser = {
   [key: string]: any;
 };
 
+const PROFILE_CACHE_KEY = "sr_profile_cache";
+
+function getCachedProfile(userId: string): AuthUser | null {
+  try {
+    const raw = sessionStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (cached?.id === userId) return cached;
+  } catch {}
+  return null;
+}
+
+function setCachedProfile(profile: AuthUser) {
+  try { sessionStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile)); } catch {}
+}
+
+function clearCachedProfile() {
+  try { sessionStorage.removeItem(PROFILE_CACHE_KEY); } catch {}
+}
+
 export function useAuth() {
   const { data: session, isPending: authLoading } = authClient.useSession();
   const authUser = session?.user as AuthUser | null | undefined;
 
-  // Fetch DB profile to get real role, applicationStatus, etc.
-  const [profile, setProfile] = React.useState<AuthUser | null>(null);
-  const [profileLoading, setProfileLoading] = React.useState(false);
+  // Seed from cache immediately so role is available on first render
+  const [profile, setProfile] = React.useState<AuthUser | null>(() =>
+    authUser?.id ? getCachedProfile(authUser.id) : null
+  );
+  const [profileLoading, setProfileLoading] = React.useState(!profile && !!authUser?.id);
+  const fetchedFor = React.useRef<string | null>(null);
 
   React.useEffect(() => {
-    if (!authUser?.id) { setProfile(null); return; }
-    setProfileLoading(true);
+    if (!authUser?.id) {
+      setProfile(null);
+      clearCachedProfile();
+      fetchedFor.current = null;
+      return;
+    }
+    // Already have a fresh cache or already fetching for this user
+    if (fetchedFor.current === authUser.id) return;
+    fetchedFor.current = authUser.id;
+
+    // Show cached immediately, then refresh in background
+    const cached = getCachedProfile(authUser.id);
+    if (cached) setProfile(cached);
+    else setProfileLoading(true);
+
     fetch("/api/users/me", {
       headers: { Authorization: `Bearer ${getToken()}` },
     })
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => setProfile(d?.user ?? null))
-      .catch(() => setProfile(null))
+      .then((d) => {
+        if (d?.user) {
+          setProfile(d.user);
+          setCachedProfile(d.user);
+        }
+      })
+      .catch(() => {})
       .finally(() => setProfileLoading(false));
   }, [authUser?.id]);
 
-  // Merge auth user with DB profile — profile wins for role/status fields
+  // Merge: DB profile fields override auth session fields (role, applicationStatus, etc.)
   const user: AuthUser | null = authUser
     ? { ...authUser, ...(profile ?? {}) }
     : null;
 
   return {
     user,
-    loading: authLoading || (!!authUser && profileLoading),
+    loading: authLoading || (!!authUser && profileLoading && !profile),
     session,
   };
 }
