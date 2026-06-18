@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, magicLink } from "better-auth/plugins";
 import * as schema from "./database/schema";
+import * as authSchema from "./database/auth-schema";
 import { getDb } from "./database";
 
 type Auth = ReturnType<typeof betterAuth>;
@@ -21,7 +22,11 @@ export function getAuth(): Auth {
     _auth = betterAuth({
       basePath: "/api/auth",
       baseURL: process.env.BETTER_AUTH_URL || process.env.WEBSITE_URL,
-      database: drizzleAdapter(db, { provider: "pg" }),
+      database: drizzleAdapter(db, {
+        provider: "pg",
+        schema: { ...authSchema },
+        usePlural: false,
+      }),
       emailAndPassword: {
         enabled: true,
         requireEmailVerification: false,
@@ -75,14 +80,21 @@ export function getAuth(): Auth {
             after: async (user: any) => {
               try {
                 const db = getDb();
-                const { eq } = await import("drizzle-orm");
                 const referralCode = generateReferralCode(user.name || "user", user.id);
+                // Insert a matching row in the app's "users" profile table
                 await db
-                  .update(schema.users)
-                  .set({ referralCode })
-                  .where(eq(schema.users.id, user.id));
+                  .insert(schema.users)
+                  .values({
+                    id: user.id,
+                    name: user.name || "",
+                    email: user.email,
+                    emailVerified: user.emailVerified ?? false,
+                    image: user.image ?? null,
+                    referralCode,
+                  })
+                  .onConflictDoNothing();
               } catch (e) {
-                console.error("[auth hook] referral code gen failed:", e);
+                console.error("[auth hook] users profile insert failed:", e);
               }
             },
           },
