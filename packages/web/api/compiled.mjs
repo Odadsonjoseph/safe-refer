@@ -60908,10 +60908,10 @@ var init_kysely_adapter = __esm({
               return await withReturning(data, db$1.insertInto(model).values(data), model, []);
             },
             async findOne({ model, where, select, join }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
-                if (and5) b = b.where((eb$1) => eb$1.and(and5.map((expr) => expr(eb$1))));
+                if (and4) b = b.where((eb$1) => eb$1.and(and4.map((expr) => expr(eb$1))));
                 if (or2) b = b.where((eb$1) => eb$1.or(or2.map((expr) => expr(eb$1))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -60933,7 +60933,7 @@ var init_kysely_adapter = __esm({
               return row;
             },
             async findMany({ model, where, limit, select, offset, sortBy, join }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom((eb) => {
                 let b = eb.selectFrom(model);
                 if (config4?.type === "mssql") {
@@ -60952,7 +60952,7 @@ var init_kysely_adapter = __esm({
                   model,
                   field: sortBy.field
                 })}`, sortBy.direction);
-                if (and5) b = b.where((eb$1) => eb$1.and(and5.map((expr) => expr(eb$1))));
+                if (and4) b = b.where((eb$1) => eb$1.and(and4.map((expr) => expr(eb$1))));
                 if (or2) b = b.where((eb$1) => eb$1.or(or2.map((expr) => expr(eb$1))));
                 if (select?.length && select.length > 0) b = b.select(select.map((field) => getFieldName({
                   model,
@@ -60977,24 +60977,24 @@ var init_kysely_adapter = __esm({
               return res;
             },
             async update({ model, where, update: values }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.updateTable(model).set(values);
-              if (and5) query = query.where((eb) => eb.and(and5.map((expr) => expr(eb))));
+              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               return await withReturning(values, query, model, where);
             },
             async updateMany({ model, where, update: values }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.updateTable(model).set(values);
-              if (and5) query = query.where((eb) => eb.and(and5.map((expr) => expr(eb))));
+              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numUpdatedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
             },
             async count({ model, where }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.selectFrom(model).select(db$1.fn.count("id").as("count"));
-              if (and5) query = query.where((eb) => eb.and(and5.map((expr) => expr(eb))));
+              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = await query.execute();
               if (typeof res[0].count === "number") return res[0].count;
@@ -61002,16 +61002,16 @@ var init_kysely_adapter = __esm({
               return parseInt(res[0].count);
             },
             async delete({ model, where }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.deleteFrom(model);
-              if (and5) query = query.where((eb) => eb.and(and5.map((expr) => expr(eb))));
+              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               await query.execute();
             },
             async deleteMany({ model, where }) {
-              const { and: and5, or: or2 } = convertWhereClause(model, where);
+              const { and: and4, or: or2 } = convertWhereClause(model, where);
               let query = db$1.deleteFrom(model);
-              if (and5) query = query.where((eb) => eb.and(and5.map((expr) => expr(eb))));
+              if (and4) query = query.where((eb) => eb.and(and4.map((expr) => expr(eb))));
               if (or2) query = query.where((eb) => eb.or(or2.map((expr) => expr(eb))));
               const res = (await query.executeTakeFirst()).numDeletedRows;
               return res > Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : Number(res);
@@ -91070,16 +91070,16 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
   const [listingCount] = await db.select({ count: count() }).from(listings);
   const [submissionCount] = await db.select({ count: count() }).from(submissions);
   const pendingApps = await db.select().from(users).where(eq(users.applicationStatus, "submitted"));
-  const affiliates = await db.select({ count: count() }).from(users).where(eq(users.role, "affiliate"));
-  const businesses = await db.select({ count: count() }).from(users).where(eq(users.role, "business"));
+  const [affiliates] = await db.select({ count: count() }).from(users).where(eq(users.role, "affiliate"));
+  const [businesses] = await db.select({ count: count() }).from(users).where(eq(users.role, "business"));
   const allSubs = await db.select().from(submissions);
   const totalPaid = allSubs.filter((s) => s.paymentStatus === "transferred" || s.paymentStatus === "fully_paid").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
   const pendingPayouts = allSubs.filter((s) => s.status === "accepted" && s.paymentStatus === "unpaid").reduce((a, s) => a + (s.payoutAmount ?? 0), 0);
   return c.json({
     stats: {
       users: userCount.count,
-      affiliates: affiliates[0].count,
-      businesses: businesses[0].count,
+      affiliates: affiliates.count,
+      businesses: businesses.count,
       listings: listingCount.count,
       submissions: submissionCount.count,
       pendingApplications: pendingApps.length,
@@ -91088,22 +91088,66 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
     }
   }, 200);
 }).get("/users", requireAuth, requireAdmin, async (c) => {
-  const rows = await db.select().from(users).orderBy(desc(users.createdAt));
+  const { status, role: role2, search } = c.req.query();
+  let query = db.select().from(users).$dynamic();
+  const filters = [];
+  if (status) filters.push(eq(users.applicationStatus, status));
+  if (role2) filters.push(eq(users.role, role2));
+  if (search) {
+    filters.push(
+      or(
+        ilike(users.name, `%${search}%`),
+        ilike(users.email, `%${search}%`)
+      )
+    );
+  }
+  if (filters.length > 0) query = query.where(and(...filters));
+  const rows = await query.orderBy(desc(users.createdAt));
   return c.json({ users: rows }, 200);
+}).delete("/users/:userId", requireAuth, requireAdmin, async (c) => {
+  const { userId } = c.req.param();
+  await db.delete(users).where(eq(users.id, userId));
+  return c.json({ ok: true }, 200);
+}).patch("/users/:userId", requireAuth, requireAdmin, async (c) => {
+  const { userId } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["role", "applicationStatus", "isAdmin", "payoutEnabled", "idRejectionReason"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [user2] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
+  if (!user2) return c.json({ error: "User not found" }, 404);
+  return c.json({ user: user2 }, 200);
+}).patch("/users/:userId/admin", requireAuth, requireAdmin, async (c) => {
+  const { userId } = c.req.param();
+  const body = await c.req.json();
+  const [user2] = await db.update(users).set({ isAdmin: body.isAdmin, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, userId)).returning();
+  return c.json({ user: user2 }, 200);
 }).get("/applications", requireAuth, requireAdmin, async (c) => {
-  const rows = await db.select().from(users).where(eq(users.applicationStatus, "submitted")).orderBy(desc(users.createdAt));
+  const { status } = c.req.query();
+  let query = db.select().from(users).$dynamic();
+  if (!status || status === "submitted") {
+    query = query.where(eq(users.applicationStatus, "submitted"));
+  } else if (status !== "all") {
+    query = query.where(eq(users.applicationStatus, status));
+  }
+  const rows = await query.orderBy(desc(users.createdAt));
   return c.json({ applications: rows }, 200);
 }).patch("/applications/:userId", requireAuth, requireAdmin, async (c) => {
   const { userId } = c.req.param();
   const body = await c.req.json();
-  let status = body.status;
-  if (!status && body.action) {
-    status = body.action === "approve" ? "approved" : "rejected";
+  let appStatus = body.status;
+  if (!appStatus && body.action) {
+    appStatus = body.action === "approve" ? "approved" : "rejected";
   }
-  const [user2] = await db.update(users).set({ applicationStatus: status, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, userId)).returning();
+  const updates = { applicationStatus: appStatus, updatedAt: /* @__PURE__ */ new Date() };
+  if (appStatus === "rejected" && body.reason) {
+    updates.idRejectionReason = body.reason;
+  }
+  const [user2] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
   if (!user2) return c.json({ error: "User not found" }, 404);
   try {
-    const emailData = applicationStatusEmail(user2.name, status);
+    const emailData = applicationStatusEmail(user2.name, appStatus);
     await sendEmail({ to: user2.email, ...emailData });
   } catch (e) {
     console.error("Failed to send application email", e);
@@ -91112,14 +91156,42 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
 }).get("/listings", requireAuth, requireAdmin, async (c) => {
   const rows = await db.select().from(listings).orderBy(desc(listings.createdAt));
   return c.json({ listings: rows }, 200);
+}).patch("/listings/:listingId", requireAuth, requireAdmin, async (c) => {
+  const { listingId } = c.req.param();
+  const body = await c.req.json();
+  const updates = { updatedAt: /* @__PURE__ */ new Date() };
+  if ("active" in body) updates.status = body.active ? "active" : "paused";
+  if ("status" in body) updates.status = body.status;
+  const [listing] = await db.update(listings).set(updates).where(eq(listings.id, listingId)).returning();
+  if (!listing) return c.json({ error: "Listing not found" }, 404);
+  return c.json({ listing }, 200);
+}).delete("/listings/:listingId", requireAuth, requireAdmin, async (c) => {
+  const { listingId } = c.req.param();
+  await db.delete(listings).where(eq(listings.id, listingId));
+  return c.json({ ok: true }, 200);
 }).get("/submissions", requireAuth, requireAdmin, async (c) => {
   const rows = await db.select().from(submissions).orderBy(desc(submissions.createdAt));
   const enriched = await Promise.all(rows.map(async (s) => {
     const [listing] = await db.select({ title: listings.title }).from(listings).where(eq(listings.id, s.listingId));
     const [affiliate] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, s.affiliateId));
-    return { ...s, listingTitle: listing?.title, affiliateName: affiliate?.name, affiliateEmail: affiliate?.email };
+    return {
+      ...s,
+      listingTitle: listing?.title,
+      affiliateName: affiliate?.name,
+      affiliateEmail: affiliate?.email
+    };
   }));
   return c.json({ submissions: enriched }, 200);
+}).patch("/submissions/:id", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["status", "paymentStatus", "payoutAmount", "adminNotes", "stripeTransferId"];
+  const updates = {};
+  for (const k of allowed2) if (k in body) updates[k] = body[k];
+  updates.updatedAt = /* @__PURE__ */ new Date();
+  const [updated] = await db.update(submissions).set(updates).where(eq(submissions.id, id)).returning();
+  if (!updated) return c.json({ error: "Not found" }, 404);
+  return c.json({ submission: updated }, 200);
 }).patch("/submissions/:id/payment", requireAuth, requireAdmin, async (c) => {
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -91130,20 +91202,33 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
   const [updated] = await db.update(submissions).set(updates).where(eq(submissions.id, id)).returning();
   if (!updated) return c.json({ error: "Not found" }, 404);
   return c.json({ submission: updated }, 200);
-}).patch("/users/:userId/admin", requireAuth, requireAdmin, async (c) => {
-  const { userId } = c.req.param();
-  const body = await c.req.json();
-  const [user2] = await db.update(users).set({ isAdmin: body.isAdmin, updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, userId)).returning();
-  return c.json({ user: user2 }, 200);
-}).patch("/users/:userId", requireAuth, requireAdmin, async (c) => {
-  const { userId } = c.req.param();
-  const body = await c.req.json();
-  const allowed2 = ["role", "applicationStatus", "isAdmin", "payoutEnabled"];
-  const updates = {};
-  for (const k of allowed2) if (k in body) updates[k] = body[k];
-  updates.updatedAt = /* @__PURE__ */ new Date();
-  const [user2] = await db.update(users).set(updates).where(eq(users.id, userId)).returning();
-  return c.json({ user: user2 }, 200);
+}).get("/payouts", requireAuth, requireAdmin, async (c) => {
+  const subs = await db.select({
+    id: submissions.id,
+    leadName: submissions.leadName,
+    leadEmail: submissions.leadEmail,
+    listingId: submissions.listingId,
+    affiliateId: submissions.affiliateId,
+    payoutAmount: submissions.payoutAmount,
+    paymentStatus: submissions.paymentStatus,
+    status: submissions.status,
+    adminNotes: submissions.adminNotes,
+    createdAt: submissions.createdAt,
+    acceptedAt: submissions.acceptedAt,
+    listingTitle: listings.title,
+    affiliateName: users.name,
+    affiliateEmail: users.email
+  }).from(submissions).leftJoin(listings, eq(submissions.listingId, listings.id)).leftJoin(users, eq(submissions.affiliateId, users.id)).where(eq(submissions.status, "accepted")).orderBy(desc(submissions.createdAt));
+  return c.json({ payouts: subs }, 200);
+}).patch("/payouts/:id/mark-paid", requireAuth, requireAdmin, async (c) => {
+  const { id } = c.req.param();
+  const body = await c.req.json().catch(() => ({}));
+  const [updated] = await db.update(submissions).set({
+    paymentStatus: "transferred",
+    adminNotes: body.adminNotes ?? null,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, id)).returning();
+  return c.json({ submission: updated }, 200);
 }).get("/learning", requireAuth, requireAdmin, async (c) => {
   const resources = await db.select().from(learningResources).orderBy(learningResources.order);
   return c.json({ resources }, 200);
@@ -91171,24 +91256,6 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
   const { id } = c.req.param();
   await db.delete(learningResources).where(eq(learningResources.id, id));
   return c.json({ ok: true }, 200);
-}).get("/payouts", requireAuth, requireAdmin, async (c) => {
-  const subs = await db.select({
-    id: submissions.id,
-    leadName: submissions.leadName,
-    leadEmail: submissions.leadEmail,
-    listingId: submissions.listingId,
-    affiliateId: submissions.affiliateId,
-    payoutAmount: submissions.payoutAmount,
-    paymentStatus: submissions.paymentStatus,
-    createdAt: submissions.createdAt,
-    listingTitle: listings.title,
-    affiliateName: users.name
-  }).from(submissions).leftJoin(listings, eq(submissions.listingId, listings.id)).leftJoin(users, eq(submissions.affiliateId, users.id)).where(eq(submissions.status, "accepted")).orderBy(desc(submissions.createdAt));
-  return c.json({ payouts: subs }, 200);
-}).patch("/payouts/:id/mark-paid", requireAuth, requireAdmin, async (c) => {
-  const { id } = c.req.param();
-  const [updated] = await db.update(submissions).set({ paymentStatus: "transferred" }).where(eq(submissions.id, id)).returning();
-  return c.json({ submission: updated }, 200);
 });
 
 // ../../node_modules/.bun/stripe@22.2.0+9d66e4116c02361d/node_modules/stripe/esm/Error.js
