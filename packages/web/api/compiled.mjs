@@ -91214,7 +91214,6 @@ var adminRouter = new Hono2().get("/stats", requireAuth, requireAdmin, async (c)
     status: submissions.status,
     adminNotes: submissions.adminNotes,
     createdAt: submissions.createdAt,
-    acceptedAt: submissions.acceptedAt,
     listingTitle: listings.title,
     affiliateName: users.name,
     affiliateEmail: users.email

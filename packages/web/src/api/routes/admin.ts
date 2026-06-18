@@ -229,7 +229,6 @@ export const adminRouter = new Hono<AppEnv>()
         status: schema.submissions.status,
         adminNotes: schema.submissions.adminNotes,
         createdAt: schema.submissions.createdAt,
-        acceptedAt: schema.submissions.acceptedAt,
         listingTitle: schema.listings.title,
         affiliateName: schema.users.name,
         affiliateEmail: schema.users.email,

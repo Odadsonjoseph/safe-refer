@@ -707,8 +707,8 @@ export default function Admin() {
                               Mark Transferred
                             </button>
                           )}
-                          {p.acceptedAt && (
-                            <p className="text-xs text-slate-400">Accepted {new Date(p.acceptedAt).toLocaleDateString()}</p>
+                          {p.createdAt && (
+                            <p className="text-xs text-slate-400">Submitted {new Date(p.createdAt).toLocaleDateString()}</p>
                           )}
                         </div>
                       </div>
