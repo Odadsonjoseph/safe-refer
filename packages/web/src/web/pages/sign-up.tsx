@@ -69,7 +69,7 @@ export default function SignUpPage() {
       <div className="hidden lg:flex flex-col justify-between w-96 bg-sky-500 p-12">
         <div>
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center mb-8">
-            <span className="text-sky-500 font-black text-lg">SR</span>
+            <span className="text-sky-500 font-black text-lg">R</span>
           </div>
           <h1 className="text-white font-bold text-3xl leading-tight">Join the referral economy.</h1>
           <p className="text-sky-100 mt-4 text-base leading-relaxed">
@@ -86,7 +86,7 @@ export default function SignUpPage() {
             </div>
           </div>
         </div>
-        <p className="text-sky-200 text-sm">© 2025 Safe Refer. All rights reserved.</p>
+        <p className="text-sky-200 text-sm">© 2025 Referrd. All rights reserved.</p>
       </div>
 
       {/* Right panel */}
@@ -94,14 +94,14 @@ export default function SignUpPage() {
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SR</span>
+              <span className="text-white font-bold text-sm">R</span>
             </div>
-            <span className="font-bold text-slate-900 text-lg">Safe Refer</span>
+            <span className="font-bold text-slate-900 text-lg">Referrd</span>
           </div>
 
           {step === "role" && (
             <>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">How will you use Safe Refer?</h2>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">How will you use Referrd?</h2>
               <p className="text-slate-500 text-sm mb-8">Choose your role to get started</p>
               <div className="space-y-3">
                 <button

@@ -40,7 +40,7 @@ export default function Referrals() {
   }, []);
 
   function copyLink() {
-    const url = data?.referralUrl || `https://safesky.my/r/${(user as any)?.referralCode}`;
+    const url = data?.referralUrl || `https://referrd.one/r/${(user as any)?.referralCode}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -55,7 +55,7 @@ export default function Referrals() {
   }
 
   const referralCode = data?.referralCode || (user as any)?.referralCode || "—";
-  const referralUrl = data?.referralUrl || `https://safesky.my/r/${referralCode}`;
+  const referralUrl = data?.referralUrl || `https://referrd.one/r/${referralCode}`;
 
   return (
     <div>
@@ -155,7 +155,7 @@ export default function Referrals() {
           </div>
           <div className="flex items-start gap-2">
             <span className="w-5 h-5 bg-sky-500 text-white rounded-full flex items-center justify-center text-xs flex-shrink-0 mt-0.5">3</span>
-            <p>Override commissions are paid out by Safe Refer — no action required from you.</p>
+            <p>Override commissions are paid out by Referrd — no action required from you.</p>
           </div>
         </div>
       </div>

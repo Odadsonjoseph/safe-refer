@@ -47,24 +47,24 @@ export function getAuth(): Auth {
               const { sendEmail } = await import("./services/email");
               await sendEmail({
                 to: email,
-                subject: "Your Safe Refer sign-in link",
+                subject: "Your Referrd sign-in link",
                 html: `
                   <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
-                      <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                        <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
+                      <div style="width:36px;height:36px;background:#87CEEB;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <span style="color:#fff;font-weight:900;font-size:16px;">R</span>
                       </div>
-                      <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
+                      <span style="font-weight:800;font-size:20px;color:#0f172a;letter-spacing:-0.5px;">Referrd</span>
                     </div>
                     <h2 style="color:#0f172a;margin:0 0 8px;">Your sign-in link</h2>
-                    <p style="color:#64748b;margin:0 0 24px;">Click below to sign in. This link expires in 10 minutes and can only be used once.</p>
-                    <a href="${url}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">Sign In to Safe Refer</a>
-                    <p style="color:#94a3b8;font-size:12px;margin-top:28px;">If you didn't request this, ignore this email.</p>
+                    <p style="color:#64748b;margin:0 0 24px;">Click below to sign in to Referrd. This link expires in 10 minutes and can only be used once.</p>
+                    <a href="${url}" style="display:inline-block;background:#87CEEB;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">Sign in to Referrd</a>
+                    <p style="color:#94a3b8;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email.</p>
                   </div>
                 `,
               });
             } catch (e) {
-              console.error("[auth] Failed to send magic link:", e);
+              console.error("[magic-link] Email failed:", e);
             }
           },
         }),
@@ -72,48 +72,17 @@ export function getAuth(): Auth {
       databaseHooks: {
         user: {
           create: {
-            async after(user: { email: string; name: string; id: string }) {
-              const referralCode = generateReferralCode(user.name, user.id);
+            after: async (user) => {
               try {
-                await db.insert(schema.users).values({
-                  id: user.id,
-                  name: user.name,
-                  email: user.email,
-                  emailVerified: false,
-                  role: "affiliate",
-                  isAdmin: false,
-                  applicationStatus: "incomplete",
-                  referralCode,
-                  payoutEnabled: false,
-                  w9Completed: false,
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                }).onConflictDoNothing();
+                const db = getDb();
+                const { eq } = await import("drizzle-orm");
+                const referralCode = generateReferralCode(user.name || "user", user.id);
+                await db
+                  .update(schema.users)
+                  .set({ referralCode })
+                  .where(eq(schema.users.id, user.id));
               } catch (e) {
-                console.error("[auth] Failed to create user profile:", e);
-              }
-
-              try {
-                const { sendEmail } = await import("./services/email");
-                await sendEmail({
-                  to: user.email,
-                  subject: "Welcome to Safe Refer",
-                  html: `
-                    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-                      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
-                        <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                          <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
-                        </div>
-                        <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
-                      </div>
-                      <h2 style="color:#0f172a;margin:0 0 8px;">Welcome, ${user.name}</h2>
-                      <p style="color:#64748b;margin:0 0 24px;">Your account is ready. Complete your profile to get started.</p>
-                      <a href="${process.env.WEBSITE_URL || process.env.BETTER_AUTH_URL}/onboarding" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;">Complete Your Profile</a>
-                    </div>
-                  `,
-                });
-              } catch (e) {
-                console.error("[auth] Failed to send welcome email:", e);
+                console.error("[auth hook] referral code gen failed:", e);
               }
             },
           },
@@ -123,9 +92,3 @@ export function getAuth(): Auth {
   }
   return _auth;
 }
-
-export const auth: Auth = new Proxy({} as Auth, {
-  get(_target, prop, receiver) {
-    return Reflect.get(getAuth() as object, prop, receiver);
-  },
-});

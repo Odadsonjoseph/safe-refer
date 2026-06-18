@@ -90,7 +90,7 @@ export default function Earnings() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <div>
-          <p className="text-sm font-medium text-sky-800">Payouts processed by Safe Refer</p>
+          <p className="text-sm font-medium text-sky-800">Payouts processed by Referrd</p>
           <p className="text-sm text-sky-600 mt-0.5">All payouts are handled directly by our admin team. Funds are transferred once your lead is accepted and verified.</p>
         </div>
       </div>

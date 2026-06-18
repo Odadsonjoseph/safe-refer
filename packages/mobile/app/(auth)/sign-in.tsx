@@ -47,7 +47,7 @@ export default function SignIn() {
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>SR</Text>
           </View>
-          <Text style={styles.brand}>Safe Refer</Text>
+          <Text style={styles.brand}>Referrd</Text>
           <Text style={styles.tagline}>The trusted referral marketplace</Text>
         </View>
 

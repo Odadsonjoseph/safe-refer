@@ -24,44 +24,78 @@ export const webhooksRouter = new Hono()
 
     if (event.type === "payment_intent.succeeded") {
       const pi = event.data.object as Stripe.PaymentIntent;
-      const { submissionId, referrerId } = pi.metadata;
+      const { submissionId, affiliateId, type, totalPayout } = pi.metadata;
       if (!submissionId) return c.json({ received: true }, 200);
 
       const [submission] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, submissionId)) as any[];
       if (!submission) return c.json({ received: true }, 200);
 
-      // Mark paid, transfer to referrer
-      await db.update(schema.submissions).set({
-        paymentStatus: "fully_paid",
-        status: "closed",
-        updatedAt: new Date(),
-      }).where(eq(schema.submissions.id, submissionId));
+      // ── Deposit paid (25%) ─────────────────────────────────────────────────
+      if (type === "deposit") {
+        // Unlock contact info, move to accepted, set 48h deadline on close
+        await db.update(schema.submissions).set({
+          status: "accepted",
+          paymentStatus: "deposit_paid",
+          updatedAt: new Date(),
+        }).where(eq(schema.submissions.id, submissionId));
 
-      // Transfer to referrer if they have a Connect account
-      try {
-        const [referrer] = await db.select().from(schema.users).where(eq(schema.users.id, referrerId)) as any[];
-        if (referrer?.stripeAccountId && referrer?.payoutEnabled) {
-          const transfer = await getStripe().transfers.create({
-            amount: pi.amount,
-            currency: "usd",
-            destination: referrer.stripeAccountId,
-            transfer_group: submissionId,
-          });
-          await db.update(schema.submissions).set({
-            stripeTransferId: transfer.id,
-            paymentStatus: "transferred",
-            updatedAt: new Date(),
-          }).where(eq(schema.submissions.id, submissionId));
-
-          // Update listing stats (increment)
-          await db.update(schema.listings).set({
-            closedDeals: sql`${schema.listings.closedDeals} + 1`,
-            totalPaidOut: sql`${schema.listings.totalPaidOut} + ${pi.amount / 100}`,
-            updatedAt: new Date(),
-          }).where(eq(schema.listings.id, submission.listingId));
+        // Notify affiliate
+        try {
+          const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, affiliateId));
+          const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
+          if (affiliate?.email) {
+            const { sendEmail, depositPaidEmail } = await import("../services/email");
+            const tmpl = depositPaidEmail(affiliate.name, submission.leadName, pi.amount / 100, listing?.title || "");
+            await sendEmail({ to: affiliate.email, ...tmpl });
+          }
+        } catch (e) {
+          console.error("[webhook] deposit notify failed:", e);
         }
-      } catch (e) {
-        console.error("Transfer failed:", e);
+      }
+
+      // ── Final payment (75%) ───────────────────────────────────────────────
+      if (type === "final") {
+        await db.update(schema.submissions).set({
+          paymentStatus: "fully_paid",
+          updatedAt: new Date(),
+        }).where(eq(schema.submissions.id, submissionId));
+
+        // Transfer 96% to affiliate (platform keeps 4%)
+        try {
+          const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, affiliateId)) as any[];
+          if (affiliate?.stripeAccountId && affiliate?.payoutEnabled) {
+            const totalPayoutNum = Number(totalPayout || 0);
+            // Affiliate gets 96% of FULL payout (deposit already paid to platform, so transfer 96% of final)
+            const transferAmount = Math.round(pi.amount * 0.96);
+            const transfer = await getStripe().transfers.create({
+              amount: transferAmount,
+              currency: "usd",
+              destination: affiliate.stripeAccountId,
+              transfer_group: submissionId,
+            });
+
+            await db.update(schema.submissions).set({
+              stripeTransferId: transfer.id,
+              paymentStatus: "transferred",
+              payoutAmount: transferAmount / 100,
+              updatedAt: new Date(),
+            }).where(eq(schema.submissions.id, submissionId));
+
+            // Update listing stats
+            await db.update(schema.listings).set({
+              closedDeals: sql`${schema.listings.closedDeals} + 1`,
+              totalPaidOut: sql`${schema.listings.totalPaidOut} + ${transferAmount / 100}`,
+              updatedAt: new Date(),
+            }).where(eq(schema.listings.id, submission.listingId));
+
+            // Email affiliate
+            const { sendEmail, payoutTransferredEmail } = await import("../services/email");
+            const tmpl = payoutTransferredEmail(affiliate.name, submission.leadName, transferAmount / 100);
+            await sendEmail({ to: affiliate.email, ...tmpl }).catch(console.error);
+          }
+        } catch (e) {
+          console.error("[webhook] final transfer failed:", e);
+        }
       }
     }
 

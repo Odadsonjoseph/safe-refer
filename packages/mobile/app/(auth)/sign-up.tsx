@@ -55,7 +55,7 @@ export default function SignUp() {
           <View style={styles.logoCircle}>
             <Text style={styles.logoText}>SR</Text>
           </View>
-          <Text style={styles.brand}>Safe Refer</Text>
+          <Text style={styles.brand}>Referrd</Text>
         </View>
 
         <View style={styles.card}>

@@ -10,6 +10,7 @@ import { webhooksRouter } from "./routes/webhooks";
 import { affiliateRouter } from "./routes/affiliate";
 import { postsRouter } from "./routes/posts";
 import { sql } from "drizzle-orm";
+import { startJobs } from "./jobs/forfeit";
 
 // Auto-migrate posts table
 async function ensurePostsTable() {
@@ -76,3 +77,6 @@ const app = new Hono()
 
 export type AppType = typeof app;
 export default app;
+
+// Start background jobs
+startJobs();

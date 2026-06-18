@@ -22,8 +22,8 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "name": "Safe Refer",
-    "slug": "safe-refer",
+    "name": "Referrd",
+    "slug": "referrd",
     "version": "1.0.0",
     "scheme": "mobile",
     "orientation": "portrait",

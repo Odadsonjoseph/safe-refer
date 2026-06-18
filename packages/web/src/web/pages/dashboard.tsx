@@ -162,11 +162,11 @@ export default function Dashboard() {
           <p className="text-sky-100 text-sm mb-4">Earn override commissions when people you refer join as affiliates.</p>
           <div className="bg-white/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <span className="text-sm font-mono truncate">
-              {data?.referralUrl || `safesky.my/r/${(user as any)?.referralCode || "..."}`}
+              {data?.referralUrl || `referrd.one/r/${(user as any)?.referralCode || "..."}`}
             </span>
             <button
               onClick={() => {
-                const url = data?.referralUrl || `https://safesky.my/r/${(user as any)?.referralCode}`;
+                const url = data?.referralUrl || `https://referrd.one/r/${(user as any)?.referralCode}`;
                 navigator.clipboard.writeText(url);
               }}
               className="bg-white text-sky-600 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-sky-50 transition flex-shrink-0"

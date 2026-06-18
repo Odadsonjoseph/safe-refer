@@ -105,7 +105,7 @@ export default function Onboarding() {
           <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center shadow">
             <span className="text-white font-bold text-lg">S</span>
           </div>
-          <span className="text-sky-600 font-bold text-xl">Safe Refer</span>
+          <span className="text-sky-600 font-bold text-xl">Referrd</span>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">

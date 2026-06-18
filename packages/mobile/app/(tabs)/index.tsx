@@ -29,7 +29,7 @@ export default function ListingsTab() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.logo}>Safe Refer</Text>
+        <Text style={styles.logo}>Referrd</Text>
         <Text style={styles.headerSub}>Find referral opportunities</Text>
       </View>
 
