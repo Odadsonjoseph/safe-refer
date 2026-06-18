@@ -1,3 +1,7 @@
+
+import { createRequire as _createRequireForCJS } from 'module';
+const require = _createRequireForCJS(import.meta.url);
+
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;

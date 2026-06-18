@@ -16,6 +16,12 @@ await build({
   minify: false,
   sourcemap: false,
   treeShaking: false,
+  banner: {
+    js: `
+import { createRequire as _createRequireForCJS } from 'module';
+const require = _createRequireForCJS(import.meta.url);
+`,
+  },
 });
 
 console.log("✓ API bundle → api/compiled.mjs");
