@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, sql } from "drizzle-orm";
+import { sendNotification, notifyTemplates } from "../services/notifications";
 
 let _stripe: Stripe | null = null;
 function getStripe() {
@@ -32,21 +33,37 @@ export const webhooksRouter = new Hono()
 
       // ── Deposit paid (25%) ─────────────────────────────────────────────────
       if (type === "deposit") {
-        // Unlock contact info, move to accepted, set 48h deadline on close
         await db.update(schema.submissions).set({
           status: "accepted",
           paymentStatus: "deposit_paid",
           updatedAt: new Date(),
         }).where(eq(schema.submissions.id, submissionId));
 
-        // Notify affiliate
+        // Notify affiliate (push + email) + business (push)
         try {
           const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, affiliateId));
           const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
-          if (affiliate?.email) {
-            const { sendEmail, depositPaidEmail } = await import("../services/email");
-            const tmpl = depositPaidEmail(affiliate.name, submission.leadName, pi.amount / 100, listing?.title || "");
-            await sendEmail({ to: affiliate.email, ...tmpl });
+          const depositAmount = pi.amount / 100;
+
+          if (affiliate) {
+            const { depositPaidEmail } = await import("../services/email");
+            await sendNotification({
+              pushToken: affiliate.expoPushToken,
+              email: affiliate.email,
+              emailTemplate: depositPaidEmail(affiliate.name, submission.leadName, depositAmount, listing?.title || ""),
+              push: notifyTemplates.leadAccepted(submission.leadName, depositAmount).push,
+            });
+          }
+
+          // Notify business: deposit confirmed, contact info unlocked
+          if (listing) {
+            const [biz] = await db.select().from(schema.users).where(eq(schema.users.id, listing.businessId));
+            if (biz) {
+              await sendNotification({
+                pushToken: biz.expoPushToken,
+                push: notifyTemplates.depositReceived(submission.leadName).push,
+              });
+            }
           }
         } catch (e) {
           console.error("[webhook] deposit notify failed:", e);
@@ -60,12 +77,9 @@ export const webhooksRouter = new Hono()
           updatedAt: new Date(),
         }).where(eq(schema.submissions.id, submissionId));
 
-        // Transfer 96% to affiliate (platform keeps 4%)
         try {
           const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, affiliateId)) as any[];
           if (affiliate?.stripeAccountId && affiliate?.payoutEnabled) {
-            const totalPayoutNum = Number(totalPayout || 0);
-            // Affiliate gets 96% of FULL payout (deposit already paid to platform, so transfer 96% of final)
             const transferAmount = Math.round(pi.amount * 0.96);
             const transfer = await getStripe().transfers.create({
               amount: transferAmount,
@@ -88,10 +102,14 @@ export const webhooksRouter = new Hono()
               updatedAt: new Date(),
             }).where(eq(schema.listings.id, submission.listingId));
 
-            // Email affiliate
-            const { sendEmail, payoutTransferredEmail } = await import("../services/email");
-            const tmpl = payoutTransferredEmail(affiliate.name, submission.leadName, transferAmount / 100);
-            await sendEmail({ to: affiliate.email, ...tmpl }).catch(console.error);
+            // Notify affiliate: paid out (push + email)
+            const { payoutTransferredEmail } = await import("../services/email");
+            await sendNotification({
+              pushToken: affiliate.expoPushToken,
+              email: affiliate.email,
+              emailTemplate: payoutTransferredEmail(affiliate.name, submission.leadName, transferAmount / 100),
+              push: notifyTemplates.payoutTransferred(transferAmount / 100, submission.leadName).push,
+            });
           }
         } catch (e) {
           console.error("[webhook] final transfer failed:", e);

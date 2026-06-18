@@ -7,6 +7,7 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, lt, and } from "drizzle-orm";
 import Stripe from "stripe";
+import { sendNotification, notifyTemplates } from "../services/notifications";
 
 let _stripe: Stripe | null = null;
 function getStripe() {
@@ -98,10 +99,14 @@ export async function runForfeitJob() {
             updatedAt: new Date(),
           }).where(eq(schema.submissions.id, sub.id));
 
-          // Email affiliate
-          const { sendEmail, forfeitEmail } = await import("../services/email");
-          const tmpl = forfeitEmail(affiliate.name, sub.leadName, transferAmount / 100);
-          await sendEmail({ to: affiliate.email, ...tmpl }).catch(console.error);
+          // Notify affiliate: forfeit received (push + email)
+          const { forfeitEmail } = await import("../services/email");
+          await sendNotification({
+            pushToken: affiliate.expoPushToken,
+            email: affiliate.email,
+            emailTemplate: forfeitEmail(affiliate.name, sub.leadName, transferAmount / 100),
+            push: notifyTemplates.forfeitReceived(transferAmount / 100, sub.leadName).push,
+          });
         }
       } catch (e) {
         console.error(`[forfeit] Failed for submission ${sub.id}:`, e);
@@ -143,9 +148,13 @@ export async function runDeadlineReminderJob() {
         const [business] = await db.select().from(schema.users).where(eq(schema.users.id, listing.businessId));
         if (!business?.email) continue;
 
-        const { sendEmail, closedDeadlineReminderEmail } = await import("../services/email");
-        const tmpl = closedDeadlineReminderEmail(business.name, sub.leadName, hoursLeft);
-        await sendEmail({ to: business.email, ...tmpl }).catch(console.error);
+        const { closedDeadlineReminderEmail } = await import("../services/email");
+        await sendNotification({
+          pushToken: business.expoPushToken,
+          email: business.email,
+          emailTemplate: closedDeadlineReminderEmail(business.name, sub.leadName, hoursLeft),
+          push: notifyTemplates.paymentDeadlineReminder(sub.leadName, hoursLeft).push,
+        });
       } catch (e) {
         console.error(`[reminder] Failed for submission ${sub.id}:`, e);
       }

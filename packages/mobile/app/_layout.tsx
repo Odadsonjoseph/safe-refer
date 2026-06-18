@@ -3,12 +3,21 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 import { OneDollarStatsProvider } from "../lib/analytics";
+import { useAuth } from "../hooks/useAuth";
+import { usePushToken } from "../hooks/usePushToken";
 import appJson from "../app.json";
 
 const queryClient = new QueryClient();
 
 const applicationId = appJson.expo.extra.applicationId ?? "";
 const hostname = applicationId ? `${applicationId}-mobile` : "localhost";
+
+// Inner component so we can use hooks after providers are mounted
+function AppWithNotifications() {
+  const { user } = useAuth();
+  usePushToken(!!user); // registers push token once user is authenticated
+  return <Slot />;
+}
 
 export default function RootLayout() {
   return (
@@ -23,7 +32,7 @@ export default function RootLayout() {
       >
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
-            <Slot />
+            <AppWithNotifications />
           </QueryClientProvider>
         </SafeAreaProvider>
       </OneDollarStatsProvider>

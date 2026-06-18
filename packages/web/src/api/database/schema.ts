@@ -57,6 +57,8 @@ export const users = pgTable("users", {
   skills: text("skills"),
   linkedinUrl: text("linkedin_url"),
   bio: text("bio"),
+  // Push notifications
+  expoPushToken: text("expo_push_token"),
   createdAt: timestamp("created_at").$defaultFn(() => new Date()),
   updatedAt: timestamp("updated_at").$defaultFn(() => new Date()),
 });

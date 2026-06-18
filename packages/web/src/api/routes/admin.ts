@@ -5,6 +5,7 @@ import * as schema from "../database/schema";
 import { eq, desc, count, and, ilike, or } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import { sendEmail, applicationStatusEmail } from "../services/email";
+import { sendNotification, notifyTemplates } from "../services/notifications";
 
 export const adminRouter = new Hono<AppEnv>()
   // ─── Stats ───────────────────────────────────────────────
@@ -129,9 +130,17 @@ export const adminRouter = new Hono<AppEnv>()
     if (!user) return c.json({ error: "User not found" }, 404);
     try {
       const emailData = applicationStatusEmail(user.name, appStatus);
-      await sendEmail({ to: user.email, ...emailData });
+      const pushData = appStatus === "approved"
+        ? notifyTemplates.applicationApproved(user.name)
+        : notifyTemplates.applicationRejected(user.name, body.reason);
+      await sendNotification({
+        pushToken: (user as any).expoPushToken,
+        email: user.email,
+        emailTemplate: emailData,
+        push: pushData.push,
+      });
     } catch (e) {
-      console.error("Failed to send application email", e);
+      console.error("Failed to send application notification", e);
     }
     return c.json({ user }, 200);
   })
@@ -253,6 +262,25 @@ export const adminRouter = new Hono<AppEnv>()
       })
       .where(eq(schema.submissions.id, id))
       .returning();
+
+    // Notify affiliate that payout was marked transferred by admin
+    if (updated) {
+      try {
+        const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, updated.affiliateId));
+        if (affiliate) {
+          const { payoutTransferredEmail } = await import("../services/email");
+          await sendNotification({
+            pushToken: (affiliate as any).expoPushToken,
+            email: affiliate.email,
+            emailTemplate: payoutTransferredEmail(affiliate.name, updated.leadName, updated.payoutAmount ?? 0),
+            push: notifyTemplates.payoutTransferred(updated.payoutAmount ?? 0, updated.leadName).push,
+          });
+        }
+      } catch (e) {
+        console.error("[admin] mark-paid notify failed:", e);
+      }
+    }
+
     return c.json({ submission: updated }, 200);
   })
 

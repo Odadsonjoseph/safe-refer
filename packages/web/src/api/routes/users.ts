@@ -492,6 +492,24 @@ export const usersRouter = new Hono<AppEnv>()
     }, 200);
   });
 
+// ─── Push token registration ──────────────────────────────────────────────────
+// Called by mobile on startup after auth to register Expo push token
+
+export const pushRouter = new Hono<AppEnv>()
+  .post("/register", requireAuth, async (c) => {
+    const user = c.get("user")!;
+    const body = await c.req.json().catch(() => ({}));
+    const { token } = body as { token?: string };
+    if (!token) return c.json({ error: "token required" }, 400);
+    await db.update(schema.users).set({ expoPushToken: token, updatedAt: new Date() }).where(eq(schema.users.id, user.id));
+    return c.json({ ok: true }, 200);
+  })
+  .delete("/register", requireAuth, async (c) => {
+    const user = c.get("user")!;
+    await db.update(schema.users).set({ expoPushToken: null, updatedAt: new Date() }).where(eq(schema.users.id, user.id));
+    return c.json({ ok: true }, 200);
+  });
+
 function generateReferralCode(name: string, id: string): string {
   const prefix = name.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase();
   const suffix = id.slice(-4).toUpperCase();

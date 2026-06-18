@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { authMiddleware } from "./middleware/auth";
 import { listings } from "./routes/listings";
 import { submissions } from "./routes/submissions";
-import { usersRouter } from "./routes/users";
+import { usersRouter, pushRouter } from "./routes/users";
 import { adminRouter } from "./routes/admin";
 import { stripeRouter } from "./routes/stripe";
 import { webhooksRouter } from "./routes/webhooks";
@@ -68,6 +68,7 @@ const app = new Hono()
   })
   .use("*", authMiddleware)
   .route("/users", usersRouter)
+  .route("/push", pushRouter)
   .route("/listings", listings)
   .route("/submissions", submissions)
   .route("/admin", adminRouter)

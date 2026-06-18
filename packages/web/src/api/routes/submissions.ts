@@ -4,6 +4,7 @@ import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
+import { sendNotification, notifyTemplates } from "../services/notifications";
 
 // ─── Contact blurring ─────────────────────────────────────────────────────────
 function blur(val: string | null | undefined): string {
@@ -71,6 +72,28 @@ export const submissions = new Hono<AppEnv>()
       .update(schema.listings)
       .set({ totalSubmissions: listing.totalSubmissions + 1, updatedAt: new Date() })
       .where(eq(schema.listings.id, body.listingId));
+
+    // Notify affiliate (push) + notify business owner (push) about new lead
+    Promise.allSettled([
+      // Affiliate confirmation
+      sendNotification({
+        pushToken: user.expoPushToken,
+        push: notifyTemplates.leadSubmitted(body.leadName, listing.title).push,
+      }),
+      // Business: new lead incoming — look up business owner
+      db.select().from(schema.users).where(eq(schema.users.id, listing.businessId)).then(([biz]) => {
+        if (!biz) return;
+        return sendNotification({
+          pushToken: biz.expoPushToken,
+          email: biz.email,
+          emailTemplate: {
+            subject: `New lead submitted for "${listing.title}"`,
+            html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;"><h2 style="color:#0f172a;">New Lead Submitted</h2><p style="color:#64748b;">A new lead was submitted for your offer <strong>${listing.title}</strong>. Log in to review it.</p><a href="${process.env.WEBSITE_URL}/dashboard" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">Review Lead</a></div>`,
+          },
+          push: notifyTemplates.newLeadIncoming(listing.title).push,
+        });
+      }),
+    ]).catch(console.error);
 
     return c.json({ submission }, 201);
   })
@@ -182,6 +205,20 @@ export const submissions = new Hono<AppEnv>()
       updatedAt: new Date(),
     }).where(eq(schema.submissions.id, id));
 
+    // Notify affiliate: lead is under review
+    db.select().from(schema.users).where(eq(schema.users.id, submission.affiliateId)).then(([aff]) => {
+      if (!aff) return;
+      return sendNotification({
+        pushToken: aff.expoPushToken,
+        email: aff.email,
+        emailTemplate: {
+          subject: `Your lead is under review`,
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;"><h2 style="color:#0f172a;">Lead Under Review</h2><p style="color:#64748b;">The business is reviewing your lead <strong>${submission.leadName}</strong>. You'll be notified once a decision is made.</p><a href="${process.env.WEBSITE_URL}/submissions" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Submissions</a></div>`,
+        },
+        push: { title: "Lead Under Review 👀", body: `${submission.leadName} is being reviewed by the business.`, data: { screen: "submissions" } },
+      });
+    }).catch(console.error);
+
     return c.json({
       submissionId: id,
       qualifiedDeadline: qualifiedDeadline.toISOString(),
@@ -251,6 +288,21 @@ export const submissions = new Hono<AppEnv>()
       updatedAt: new Date(),
     }).where(eq(schema.submissions.id, id));
 
+    // Notify affiliate: deal closed, final payment incoming
+    const finalAmt = submission.finalAmount ?? (submission.payoutAmount ?? 0) * 0.75;
+    db.select().from(schema.users).where(eq(schema.users.id, submission.affiliateId)).then(([aff]) => {
+      if (!aff) return;
+      return sendNotification({
+        pushToken: aff.expoPushToken,
+        email: aff.email,
+        emailTemplate: {
+          subject: `Deal closed — final payment of ${finalAmt.toFixed(2)} incoming`,
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;"><h2 style="color:#0f172a;">Deal Closed 🤝</h2><p style="color:#64748b;">The deal for <strong>${submission.leadName}</strong> has been marked closed. The business has 48 hours to complete the final payment of ${finalAmt.toFixed(2)}. You'll be notified as soon as it hits.</p><a href="${process.env.WEBSITE_URL}/submissions" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Submissions</a></div>`,
+        },
+        push: notifyTemplates.leadClosed(submission.leadName, finalAmt).push,
+      });
+    }).catch(console.error);
+
     return c.json({ deadline: deadline.toISOString(), finalAmount: submission.finalAmount }, 200);
   })
 
@@ -273,6 +325,20 @@ export const submissions = new Hono<AppEnv>()
       status: "rejected",
       updatedAt: new Date(),
     }).where(eq(schema.submissions.id, id)).returning();
+
+    // Notify affiliate
+    db.select().from(schema.users).where(eq(schema.users.id, submission.affiliateId)).then(([aff]) => {
+      if (!aff) return;
+      return sendNotification({
+        pushToken: aff.expoPushToken,
+        email: aff.email,
+        emailTemplate: {
+          subject: `Lead update — ${submission.leadName}`,
+          html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;"><h2 style="color:#0f172a;">Lead Not Accepted</h2><p style="color:#64748b;"><strong>${submission.leadName}</strong> was not accepted at this time. Keep submitting — more opportunities await!</p><a href="${process.env.WEBSITE_URL}/listings" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">Browse Offers</a></div>`,
+        },
+        push: notifyTemplates.leadRejected(submission.leadName).push,
+      });
+    }).catch(console.error);
 
     return c.json({ submission: updated }, 200);
   })
