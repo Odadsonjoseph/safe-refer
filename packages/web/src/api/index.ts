@@ -51,8 +51,8 @@ const app = new Hono()
     })
   )
   .on(["GET", "POST"], "/api/auth/*", async (c) => {
-    const { auth } = await import("./auth");
-    return auth.handler(c.req.raw);
+    const { getAuth } = await import("./auth");
+    return getAuth().handler(c.req.raw);
   })
   .route("/webhooks", webhooksRouter)
   .basePath("api")

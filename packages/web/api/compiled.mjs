@@ -108854,8 +108854,8 @@ var app = new Hono2().use(
     exposeHeaders: ["set-auth-token"]
   })
 ).on(["GET", "POST"], "/api/auth/*", async (c) => {
-  const { auth } = await Promise.resolve().then(() => (init_auth(), auth_exports));
-  return auth.handler(c.req.raw);
+  const { getAuth: getAuth2 } = await Promise.resolve().then(() => (init_auth(), auth_exports));
+  return getAuth2().handler(c.req.raw);
 }).route("/webhooks", webhooksRouter).basePath("api").get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200)).get("/dbtest", async (c) => {
   try {
     const { db: db2 } = await Promise.resolve().then(() => (init_database(), database_exports));

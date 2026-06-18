@@ -72,7 +72,7 @@ export function getAuth(): Auth {
       databaseHooks: {
         user: {
           create: {
-            after: async (user) => {
+            after: async (user: any) => {
               try {
                 const db = getDb();
                 const { eq } = await import("drizzle-orm");
