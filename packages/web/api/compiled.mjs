@@ -4358,48 +4358,8 @@ var init_aggregate = __esm({
 });
 
 // ../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/sql/functions/vector.js
-function toSql(value) {
-  return JSON.stringify(value);
-}
-function l2Distance(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <-> ${toSql(value)}`;
-  }
-  return sql`${column} <-> ${value}`;
-}
-function l1Distance(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <+> ${toSql(value)}`;
-  }
-  return sql`${column} <+> ${value}`;
-}
-function innerProduct(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <#> ${toSql(value)}`;
-  }
-  return sql`${column} <#> ${value}`;
-}
-function cosineDistance(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <=> ${toSql(value)}`;
-  }
-  return sql`${column} <=> ${value}`;
-}
-function hammingDistance(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <~> ${toSql(value)}`;
-  }
-  return sql`${column} <~> ${value}`;
-}
-function jaccardDistance(column, value) {
-  if (Array.isArray(value)) {
-    return sql`${column} <%> ${toSql(value)}`;
-  }
-  return sql`${column} <%> ${value}`;
-}
 var init_vector2 = __esm({
   "../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/sql/functions/vector.js"() {
-    init_sql();
   }
 });
 
@@ -8636,127 +8596,6 @@ var init_operations = __esm({
 });
 
 // ../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/index.js
-var drizzle_orm_exports = {};
-__export(drizzle_orm_exports, {
-  BaseName: () => BaseName,
-  Column: () => Column,
-  ColumnAliasProxyHandler: () => ColumnAliasProxyHandler,
-  ColumnBuilder: () => ColumnBuilder,
-  Columns: () => Columns,
-  ConsoleLogWriter: () => ConsoleLogWriter,
-  DefaultLogger: () => DefaultLogger,
-  DrizzleError: () => DrizzleError,
-  DrizzleQueryError: () => DrizzleQueryError,
-  ExtraConfigBuilder: () => ExtraConfigBuilder,
-  ExtraConfigColumns: () => ExtraConfigColumns,
-  FakePrimitiveParam: () => FakePrimitiveParam,
-  IsAlias: () => IsAlias,
-  Many: () => Many,
-  Name: () => Name,
-  NoopLogger: () => NoopLogger,
-  One: () => One,
-  OriginalName: () => OriginalName,
-  Param: () => Param,
-  Placeholder: () => Placeholder,
-  QueryPromise: () => QueryPromise,
-  Relation: () => Relation,
-  RelationTableAliasProxyHandler: () => RelationTableAliasProxyHandler,
-  Relations: () => Relations,
-  SQL: () => SQL,
-  Schema: () => Schema,
-  StringChunk: () => StringChunk,
-  Subquery: () => Subquery,
-  Table: () => Table,
-  TableAliasProxyHandler: () => TableAliasProxyHandler,
-  TransactionRollbackError: () => TransactionRollbackError,
-  View: () => View,
-  ViewBaseConfig: () => ViewBaseConfig,
-  WithSubquery: () => WithSubquery,
-  aliasedRelation: () => aliasedRelation,
-  aliasedTable: () => aliasedTable,
-  aliasedTableColumn: () => aliasedTableColumn,
-  and: () => and,
-  applyMixins: () => applyMixins,
-  arrayContained: () => arrayContained,
-  arrayContains: () => arrayContains,
-  arrayOverlaps: () => arrayOverlaps,
-  asc: () => asc,
-  avg: () => avg,
-  avgDistinct: () => avgDistinct,
-  between: () => between,
-  bindIfParam: () => bindIfParam,
-  cosineDistance: () => cosineDistance,
-  count: () => count,
-  countDistinct: () => countDistinct,
-  createMany: () => createMany,
-  createOne: () => createOne,
-  createTableRelationsHelpers: () => createTableRelationsHelpers,
-  desc: () => desc,
-  entityKind: () => entityKind,
-  eq: () => eq,
-  exists: () => exists,
-  extractTablesRelationalConfig: () => extractTablesRelationalConfig,
-  fillPlaceholders: () => fillPlaceholders,
-  getColumnNameAndConfig: () => getColumnNameAndConfig,
-  getOperators: () => getOperators,
-  getOrderByOperators: () => getOrderByOperators,
-  getTableColumns: () => getTableColumns,
-  getTableLikeName: () => getTableLikeName,
-  getTableName: () => getTableName,
-  getTableUniqueName: () => getTableUniqueName,
-  getViewName: () => getViewName,
-  getViewSelectedFields: () => getViewSelectedFields,
-  gt: () => gt,
-  gte: () => gte,
-  hammingDistance: () => hammingDistance,
-  hasOwnEntityKind: () => hasOwnEntityKind,
-  haveSameKeys: () => haveSameKeys,
-  ilike: () => ilike,
-  inArray: () => inArray,
-  innerProduct: () => innerProduct,
-  is: () => is,
-  isConfig: () => isConfig,
-  isDriverValueEncoder: () => isDriverValueEncoder,
-  isNotNull: () => isNotNull,
-  isNull: () => isNull,
-  isSQLWrapper: () => isSQLWrapper,
-  isTable: () => isTable,
-  isView: () => isView,
-  jaccardDistance: () => jaccardDistance,
-  l1Distance: () => l1Distance,
-  l2Distance: () => l2Distance,
-  like: () => like,
-  lt: () => lt,
-  lte: () => lte,
-  mapColumnsInAliasedSQLToAlias: () => mapColumnsInAliasedSQLToAlias,
-  mapColumnsInSQLToAlias: () => mapColumnsInSQLToAlias,
-  mapRelationalRow: () => mapRelationalRow,
-  mapResultRow: () => mapResultRow,
-  mapUpdateSet: () => mapUpdateSet,
-  max: () => max,
-  min: () => min,
-  name: () => name,
-  ne: () => ne,
-  noopDecoder: () => noopDecoder,
-  noopEncoder: () => noopEncoder,
-  noopMapper: () => noopMapper,
-  normalizeRelation: () => normalizeRelation,
-  not: () => not,
-  notBetween: () => notBetween,
-  notExists: () => notExists,
-  notIlike: () => notIlike,
-  notInArray: () => notInArray,
-  notLike: () => notLike,
-  or: () => or,
-  orderSelectedFields: () => orderSelectedFields,
-  param: () => param,
-  placeholder: () => placeholder,
-  relations: () => relations,
-  sql: () => sql,
-  sum: () => sum,
-  sumDistinct: () => sumDistinct,
-  textDecoder: () => textDecoder
-});
 var init_drizzle_orm = __esm({
   "../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/index.js"() {
     init_alias();
@@ -8777,6 +8616,16 @@ var init_drizzle_orm = __esm({
 });
 
 // src/api/database/auth-schema.ts
+var auth_schema_exports = {};
+__export(auth_schema_exports, {
+  account: () => account,
+  accountRelations: () => accountRelations,
+  session: () => session,
+  sessionRelations: () => sessionRelations,
+  user: () => user,
+  userRelations: () => userRelations,
+  verification: () => verification
+});
 var user, session, account, verification, userRelations, sessionRelations, accountRelations;
 var init_auth_schema = __esm({
   "src/api/database/auth-schema.ts"() {
@@ -87846,7 +87695,11 @@ function getAuth() {
     _auth = betterAuth({
       basePath: "/api/auth",
       baseURL: process.env.BETTER_AUTH_URL || process.env.WEBSITE_URL,
-      database: drizzleAdapter(db2, { provider: "pg" }),
+      database: drizzleAdapter(db2, {
+        provider: "pg",
+        schema: { ...auth_schema_exports },
+        usePlural: false
+      }),
       emailAndPassword: {
         enabled: true,
         requireEmailVerification: false
@@ -87900,11 +87753,17 @@ function getAuth() {
             after: async (user2) => {
               try {
                 const db3 = getDb();
-                const { eq: eq2 } = await Promise.resolve().then(() => (init_drizzle_orm(), drizzle_orm_exports));
                 const referralCode = generateReferralCode(user2.name || "user", user2.id);
-                await db3.update(users).set({ referralCode }).where(eq2(users.id, user2.id));
+                await db3.insert(users).values({
+                  id: user2.id,
+                  name: user2.name || "",
+                  email: user2.email,
+                  emailVerified: user2.emailVerified ?? false,
+                  image: user2.image ?? null,
+                  referralCode
+                }).onConflictDoNothing();
               } catch (e) {
-                console.error("[auth hook] referral code gen failed:", e);
+                console.error("[auth hook] users profile insert failed:", e);
               }
             }
           }
@@ -87921,6 +87780,7 @@ var init_auth = __esm({
     init_drizzle_adapter2();
     init_plugins();
     init_schema2();
+    init_auth_schema();
     init_database();
     _auth = null;
   }
