@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
@@ -12,7 +12,17 @@ import {
   Clock,
   DollarSign,
   ShieldCheck,
+  Lock,
 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
 
 export default function PaymentsPage() {
   const { data: session } = authClient.useSession();
@@ -23,6 +33,10 @@ export default function PaymentsPage() {
   const isSuccess = params.get("success") === "1";
   const isRefresh = params.get("refresh") === "1";
   const paymentDone = params.get("paid") === "1";
+  const inlineClientSecret = params.get("cs") || "";
+  const depositSubId = params.get("deposit") || "";
+  const finalSubId = params.get("final") || "";
+  const isInlinePayment = !!(inlineClientSecret && (depositSubId || finalSubId));
 
   // Stripe Connect status (referrers)
   const connectStatus = useQuery({
@@ -35,7 +49,7 @@ export default function PaymentsPage() {
   const posterSubmissions = useQuery({
     queryKey: ["poster-submissions-pay"],
     queryFn: async () => (await (api.submissions as any).poster.$get()).json(),
-    enabled: !!user,
+    enabled: !!user && !isInlinePayment,
   });
 
   const onboard = useMutation({
@@ -49,21 +63,47 @@ export default function PaymentsPage() {
   });
 
   const allSubs: any[] = (posterSubmissions.data as any)?.submissions ?? [];
-
-  // Leads accepted but no deposit paid yet
   const awaitingDeposit = allSubs.filter(
     (s) => s.status === "accepted" && (!s.paymentStatus || s.paymentStatus === "unpaid")
   );
-
-  // Leads closed, deposit paid, awaiting final 75%
   const awaitingFinal = allSubs.filter(
     (s) => s.status === "closed" && s.paymentStatus === "deposit_paid"
   );
 
-  const isPosterOrAdmin =
-    user?.role === "poster" || user?.role === "both" || user?.isAdmin;
-  const isReferrer =
-    user?.role === "referrer" || user?.role === "both";
+  const isPosterOrAdmin = user?.role === "poster" || user?.role === "both" || user?.isAdmin;
+  const isReferrer = user?.role === "referrer" || user?.role === "both";
+
+  // ─── Inline card payment mode ─────────────────────────────────────────────
+  if (isInlinePayment) {
+    const payType = depositSubId ? "deposit" : "final";
+    const label = payType === "deposit" ? "25% Deposit" : "75% Final Payment";
+
+    return (
+      <DashboardLayout>
+        <div className="max-w-lg space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Complete Payment</h1>
+            <p className="text-slate-500 text-sm mt-1">Pay {label} — held securely in escrow</p>
+          </div>
+
+          <div className="bg-sky-50 border border-sky-100 rounded-xl px-5 py-3 flex items-center gap-2 text-xs text-sky-700">
+            <Lock size={13} className="text-sky-500 flex-shrink-0" />
+            <span>Payment is processed securely by Stripe. Funds held in escrow until referral closes.</span>
+          </div>
+
+          <Elements stripe={stripePromise} options={{ clientSecret: inlineClientSecret }}>
+            <InlineCardForm
+              clientSecret={inlineClientSecret}
+              payType={payType}
+              onSuccess={() => {
+                window.location.href = "/payments?paid=1";
+              }}
+            />
+          </Elements>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -82,7 +122,7 @@ export default function PaymentsPage() {
             <div>
               <p className="text-sm font-semibold text-green-800">Payment successful</p>
               <p className="text-xs text-green-600 mt-0.5">
-                Funds are held in escrow and will transfer to the referrer automatically.
+                Funds are held in escrow and will transfer to the referrer automatically when the deal closes.
               </p>
             </div>
           </div>
@@ -92,9 +132,7 @@ export default function PaymentsPage() {
             <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-green-800">Stripe account connected</p>
-              <p className="text-xs text-green-600 mt-0.5">
-                You're set up to receive payouts automatically.
-              </p>
+              <p className="text-xs text-green-600 mt-0.5">You're set up to receive payouts automatically.</p>
             </div>
           </div>
         )}
@@ -163,16 +201,16 @@ export default function PaymentsPage() {
           </div>
         )}
 
-        {/* Escrow legend */}
+        {/* Escrow info banner */}
         {isPosterOrAdmin && (
           <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 flex flex-col sm:flex-row gap-4 text-xs text-sky-700">
             <div className="flex items-center gap-2">
               <ShieldCheck size={14} className="text-sky-500 flex-shrink-0" />
               <span><strong>Escrow protected</strong> — funds held safely until you confirm the referral closed.</span>
             </div>
-            <div className="flex items-center gap-2 sm:ml-auto">
+            <div className="flex items-center gap-2 sm:ml-auto whitespace-nowrap">
               <CreditCard size={14} className="text-sky-500 flex-shrink-0" />
-              <span><strong>25%</strong> on accept · <strong>75%</strong> on close · <strong>48h</strong> to pay or deposit is forfeited to referrer</span>
+              <span><strong>25%</strong> on accept · <strong>75%</strong> on close · <strong>48h</strong> to pay or deposit forfeits</span>
             </div>
           </div>
         )}
@@ -191,7 +229,7 @@ export default function PaymentsPage() {
           />
         )}
 
-        {/* Poster: Awaiting Final Payment */}
+        {/* Poster: Awaiting Final */}
         {isPosterOrAdmin && (
           <SubmissionPaySection
             title="Step 2 — Pay Balance (75%)"
@@ -206,6 +244,88 @@ export default function PaymentsPage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+// ─── Inline Stripe card form ──────────────────────────────────────────────────
+function InlineCardForm({
+  clientSecret,
+  payType,
+  onSuccess,
+}: {
+  clientSecret: string;
+  payType: "deposit" | "final";
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paying, setPaying] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setPaying(true);
+    setError("");
+    try {
+      const card = elements.getElement(CardElement);
+      if (!card) throw new Error("Card element not found");
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: { card },
+      });
+      if (result.error) {
+        setError(result.error.message || "Payment failed");
+      } else if (result.paymentIntent?.status === "succeeded") {
+        onSuccess();
+      }
+    } catch (e: any) {
+      setError(e.message || "Payment failed");
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-5">
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Card details</label>
+        <div className="border border-slate-300 rounded-lg px-4 py-3 focus-within:ring-2 focus-within:ring-sky-400 focus-within:border-sky-400 transition-all">
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: "15px",
+                  color: "#1e293b",
+                  "::placeholder": { color: "#94a3b8" },
+                },
+                invalid: { color: "#ef4444" },
+              },
+            }}
+          />
+        </div>
+        {error && (
+          <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+            <AlertCircle size={12} /> {error}
+          </p>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        disabled={!stripe || paying}
+        className="w-full flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-60 text-white font-semibold py-3 rounded-xl transition-colors"
+      >
+        {paying ? (
+          <><Loader2 size={16} className="animate-spin" /> Processing…</>
+        ) : (
+          <><Lock size={15} /> Pay {payType === "deposit" ? "25% Deposit" : "75% Balance"} Securely</>
+        )}
+      </button>
+
+      <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-1">
+        <Lock size={11} /> Secured by Stripe — your card info is never stored
+      </p>
+    </form>
   );
 }
 
@@ -238,7 +358,6 @@ function SubmissionPaySection({
           <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
         </div>
       </div>
-
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="w-7 h-7 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
@@ -272,7 +391,6 @@ function PayRow({
   const depositAmt = (s.depositAmount ?? (s.payoutAmount ?? 0) * 0.25).toFixed(2);
   const finalAmt = (s.finalAmount ?? (s.payoutAmount ?? 0) * 0.75).toFixed(2);
   const amount = payType === "deposit" ? depositAmt : finalAmt;
-  const label = payType === "deposit" ? "Pay 25% Deposit" : "Pay 75% Balance";
 
   const deadline = s.paymentDeadline ? new Date(s.paymentDeadline) : null;
   const hoursLeft = deadline
@@ -284,20 +402,14 @@ function PayRow({
     setError("");
     try {
       const endpoint = payType === "deposit"
-        ? (api.stripe as any).deposit[s.id].$post()
-        : (api.stripe as any).final[s.id].$post();
-      const res = await endpoint;
+        ? `/api/stripe/deposit/${s.id}`
+        : `/api/stripe/final/${s.id}`;
+      const res = await fetch(endpoint, { method: "POST" });
       const data = await res.json();
-      if (data.error) {
-        setError(data.error);
-        return;
-      }
-      if (data.url) {
-        // Stripe Checkout redirect
-        window.location.href = data.url;
-      } else {
-        // Payment succeeded inline (e.g. PaymentIntent)
-        onPaid();
+      if (data.error) { setError(data.error); return; }
+      if (data.clientSecret) {
+        const qp = payType === "deposit" ? `deposit=${s.id}` : `final=${s.id}`;
+        window.location.href = `/payments?${qp}&cs=${encodeURIComponent(data.clientSecret)}`;
       }
     } catch {
       setError("Payment failed. Try again.");
@@ -312,8 +424,7 @@ function PayRow({
         <div className="min-w-0">
           <p className="font-medium text-slate-900 text-sm truncate">{s.leadName}</p>
           <p className="text-xs text-slate-400 mt-0.5 truncate">
-            {s.leadEmail}
-            {s.leadCompany ? ` · ${s.leadCompany}` : ""}
+            {s.leadEmail}{s.leadCompany ? ` · ${s.leadCompany}` : ""}
           </p>
           <p className="text-xs text-slate-400 truncate">{s.listingTitle}</p>
           {hoursLeft !== null && payType === "final" && (
@@ -325,9 +436,7 @@ function PayRow({
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="text-right">
             <p className="text-sm font-bold text-sky-600">${amount}</p>
-            <p className="text-xs text-slate-400">
-              of ${(s.payoutAmount ?? 0).toFixed(2)} total
-            </p>
+            <p className="text-xs text-slate-400">of ${(s.payoutAmount ?? 0).toFixed(2)} total</p>
             {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
           </div>
           <button
@@ -335,12 +444,8 @@ function PayRow({
             disabled={paying}
             className="flex items-center gap-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-60 whitespace-nowrap"
           >
-            {paying ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <CreditCard size={13} />
-            )}
-            {label}
+            {paying ? <Loader2 size={13} className="animate-spin" /> : <CreditCard size={13} />}
+            {payType === "deposit" ? "Pay Deposit" : "Pay Balance"}
           </button>
         </div>
       </div>

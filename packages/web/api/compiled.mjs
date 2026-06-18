@@ -4352,8 +4352,48 @@ var init_aggregate = __esm({
 });
 
 // ../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/sql/functions/vector.js
+function toSql(value) {
+  return JSON.stringify(value);
+}
+function l2Distance(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <-> ${toSql(value)}`;
+  }
+  return sql`${column} <-> ${value}`;
+}
+function l1Distance(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <+> ${toSql(value)}`;
+  }
+  return sql`${column} <+> ${value}`;
+}
+function innerProduct(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <#> ${toSql(value)}`;
+  }
+  return sql`${column} <#> ${value}`;
+}
+function cosineDistance(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <=> ${toSql(value)}`;
+  }
+  return sql`${column} <=> ${value}`;
+}
+function hammingDistance(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <~> ${toSql(value)}`;
+  }
+  return sql`${column} <~> ${value}`;
+}
+function jaccardDistance(column, value) {
+  if (Array.isArray(value)) {
+    return sql`${column} <%> ${toSql(value)}`;
+  }
+  return sql`${column} <%> ${value}`;
+}
 var init_vector2 = __esm({
   "../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/sql/functions/vector.js"() {
+    init_sql();
   }
 });
 
@@ -8590,6 +8630,127 @@ var init_operations = __esm({
 });
 
 // ../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/index.js
+var drizzle_orm_exports = {};
+__export(drizzle_orm_exports, {
+  BaseName: () => BaseName,
+  Column: () => Column,
+  ColumnAliasProxyHandler: () => ColumnAliasProxyHandler,
+  ColumnBuilder: () => ColumnBuilder,
+  Columns: () => Columns,
+  ConsoleLogWriter: () => ConsoleLogWriter,
+  DefaultLogger: () => DefaultLogger,
+  DrizzleError: () => DrizzleError,
+  DrizzleQueryError: () => DrizzleQueryError,
+  ExtraConfigBuilder: () => ExtraConfigBuilder,
+  ExtraConfigColumns: () => ExtraConfigColumns,
+  FakePrimitiveParam: () => FakePrimitiveParam,
+  IsAlias: () => IsAlias,
+  Many: () => Many,
+  Name: () => Name,
+  NoopLogger: () => NoopLogger,
+  One: () => One,
+  OriginalName: () => OriginalName,
+  Param: () => Param,
+  Placeholder: () => Placeholder,
+  QueryPromise: () => QueryPromise,
+  Relation: () => Relation,
+  RelationTableAliasProxyHandler: () => RelationTableAliasProxyHandler,
+  Relations: () => Relations,
+  SQL: () => SQL,
+  Schema: () => Schema,
+  StringChunk: () => StringChunk,
+  Subquery: () => Subquery,
+  Table: () => Table,
+  TableAliasProxyHandler: () => TableAliasProxyHandler,
+  TransactionRollbackError: () => TransactionRollbackError,
+  View: () => View,
+  ViewBaseConfig: () => ViewBaseConfig,
+  WithSubquery: () => WithSubquery,
+  aliasedRelation: () => aliasedRelation,
+  aliasedTable: () => aliasedTable,
+  aliasedTableColumn: () => aliasedTableColumn,
+  and: () => and,
+  applyMixins: () => applyMixins,
+  arrayContained: () => arrayContained,
+  arrayContains: () => arrayContains,
+  arrayOverlaps: () => arrayOverlaps,
+  asc: () => asc,
+  avg: () => avg,
+  avgDistinct: () => avgDistinct,
+  between: () => between,
+  bindIfParam: () => bindIfParam,
+  cosineDistance: () => cosineDistance,
+  count: () => count,
+  countDistinct: () => countDistinct,
+  createMany: () => createMany,
+  createOne: () => createOne,
+  createTableRelationsHelpers: () => createTableRelationsHelpers,
+  desc: () => desc,
+  entityKind: () => entityKind,
+  eq: () => eq,
+  exists: () => exists,
+  extractTablesRelationalConfig: () => extractTablesRelationalConfig,
+  fillPlaceholders: () => fillPlaceholders,
+  getColumnNameAndConfig: () => getColumnNameAndConfig,
+  getOperators: () => getOperators,
+  getOrderByOperators: () => getOrderByOperators,
+  getTableColumns: () => getTableColumns,
+  getTableLikeName: () => getTableLikeName,
+  getTableName: () => getTableName,
+  getTableUniqueName: () => getTableUniqueName,
+  getViewName: () => getViewName,
+  getViewSelectedFields: () => getViewSelectedFields,
+  gt: () => gt,
+  gte: () => gte,
+  hammingDistance: () => hammingDistance,
+  hasOwnEntityKind: () => hasOwnEntityKind,
+  haveSameKeys: () => haveSameKeys,
+  ilike: () => ilike,
+  inArray: () => inArray,
+  innerProduct: () => innerProduct,
+  is: () => is,
+  isConfig: () => isConfig,
+  isDriverValueEncoder: () => isDriverValueEncoder,
+  isNotNull: () => isNotNull,
+  isNull: () => isNull,
+  isSQLWrapper: () => isSQLWrapper,
+  isTable: () => isTable,
+  isView: () => isView,
+  jaccardDistance: () => jaccardDistance,
+  l1Distance: () => l1Distance,
+  l2Distance: () => l2Distance,
+  like: () => like,
+  lt: () => lt,
+  lte: () => lte,
+  mapColumnsInAliasedSQLToAlias: () => mapColumnsInAliasedSQLToAlias,
+  mapColumnsInSQLToAlias: () => mapColumnsInSQLToAlias,
+  mapRelationalRow: () => mapRelationalRow,
+  mapResultRow: () => mapResultRow,
+  mapUpdateSet: () => mapUpdateSet,
+  max: () => max,
+  min: () => min,
+  name: () => name,
+  ne: () => ne,
+  noopDecoder: () => noopDecoder,
+  noopEncoder: () => noopEncoder,
+  noopMapper: () => noopMapper,
+  normalizeRelation: () => normalizeRelation,
+  not: () => not,
+  notBetween: () => notBetween,
+  notExists: () => notExists,
+  notIlike: () => notIlike,
+  notInArray: () => notInArray,
+  notLike: () => notLike,
+  or: () => or,
+  orderSelectedFields: () => orderSelectedFields,
+  param: () => param,
+  placeholder: () => placeholder,
+  relations: () => relations,
+  sql: () => sql,
+  sum: () => sum,
+  sumDistinct: () => sumDistinct,
+  textDecoder: () => textDecoder
+});
 var init_drizzle_orm = __esm({
   "../../node_modules/.bun/drizzle-orm@0.45.2+fade04c57627f911/node_modules/drizzle-orm/index.js"() {
     init_alias();
@@ -14694,6 +14855,10 @@ var init_dist = __esm({
 var email_exports = {};
 __export(email_exports, {
   applicationStatusEmail: () => applicationStatusEmail,
+  closedDeadlineReminderEmail: () => closedDeadlineReminderEmail,
+  depositPaidEmail: () => depositPaidEmail,
+  forfeitEmail: () => forfeitEmail,
+  payoutTransferredEmail: () => payoutTransferredEmail,
   sendEmail: () => sendEmail,
   submissionStatusEmail: () => submissionStatusEmail
 });
@@ -14703,7 +14868,7 @@ function getResend() {
 }
 async function sendEmail({ to, subject, text: text2, html: html2, replyTo }) {
   const payload = {
-    from: "Safe Refer <refer@safesky.my>",
+    from: "Referrd <refer@safesky.my>",
     to: Array.isArray(to) ? to : [to],
     subject,
     ...html2 ? { html: html2 } : {},
@@ -14717,24 +14882,26 @@ async function sendEmail({ to, subject, text: text2, html: html2, replyTo }) {
 function applicationStatusEmail(userName, status) {
   if (status === "approved") {
     return {
-      subject: "You're approved on Safe Refer! \u{1F389}",
+      subject: "You're approved on Referrd! \u{1F389}",
       html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-          <h2 style="color:#0EA5E9;">You're approved!</h2>
-          <p>Hi ${userName},</p>
-          <p>Great news \u2014 your Safe Refer application has been approved. You can now browse listings and start submitting referrals.</p>
-          <a href="${process.env.WEBSITE_URL}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Go to Dashboard</a>
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+          ${brand}
+          <h2 style="color:#0f172a;margin:0 0 8px;">You're approved!</h2>
+          <p style="color:#64748b;">Hi ${userName},</p>
+          <p style="color:#64748b;">Great news \u2014 your Referrd application has been approved. You can now browse listings and start submitting referrals.</p>
+          <a href="${process.env.WEBSITE_URL}/dashboard" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">Go to Dashboard</a>
         </div>
       `
     };
   }
   return {
-    subject: "Safe Refer application update",
+    subject: "Referrd application update",
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-        <h2 style="color:#0F172A;">Application Update</h2>
-        <p>Hi ${userName},</p>
-        <p>After review, we're unable to approve your application at this time. Please contact us if you have questions.</p>
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#0f172a;margin:0 0 8px;">Application Update</h2>
+        <p style="color:#64748b;">Hi ${userName},</p>
+        <p style="color:#64748b;">After review, we're unable to approve your application at this time. Please contact us if you have questions.</p>
       </div>
     `
   };
@@ -14743,20 +14910,85 @@ function submissionStatusEmail(referrerName, leadName, status) {
   return {
     subject: `Your referral for ${leadName} has been ${status}`,
     html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-        <h2 style="color:#0EA5E9;">Referral Update</h2>
-        <p>Hi ${referrerName},</p>
-        <p>Your referral for <strong>${leadName}</strong> has been <strong>${status}</strong>.</p>
-        <a href="${process.env.WEBSITE_URL}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Details</a>
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#0f172a;">Referral Update</h2>
+        <p style="color:#64748b;">Hi ${referrerName},</p>
+        <p style="color:#64748b;">Your referral for <strong>${leadName}</strong> has been <strong>${status}</strong>.</p>
+        <a href="${process.env.WEBSITE_URL}/submissions" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Details</a>
       </div>
     `
   };
 }
-var _resend;
+function depositPaidEmail(affiliateName, leadName, depositAmount, listingTitle) {
+  return {
+    subject: `Deposit received for your lead \u2014 ${leadName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#0f172a;">Deposit Secured</h2>
+        <p style="color:#64748b;">Hi ${affiliateName},</p>
+        <p style="color:#64748b;">Great news! The business has accepted your lead <strong>${leadName}</strong> for <em>${listingTitle}</em> and paid a $${depositAmount.toFixed(2)} deposit. Your full payout is secured \u2014 you'll receive the remainder once the deal closes.</p>
+        <a href="${process.env.WEBSITE_URL}/submissions" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Lead Status</a>
+      </div>
+    `
+  };
+}
+function payoutTransferredEmail(affiliateName, leadName, amount) {
+  return {
+    subject: `You've been paid $${amount.toFixed(2)} for ${leadName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#16a34a;">Payment Transferred \u{1F389}</h2>
+        <p style="color:#64748b;">Hi ${affiliateName},</p>
+        <p style="color:#64748b;"><strong>$${amount.toFixed(2)}</strong> has been transferred to your Stripe account for the lead <strong>${leadName}</strong>. It should appear within 1\u20132 business days.</p>
+        <a href="${process.env.WEBSITE_URL}/earnings" style="display:inline-block;background:#16a34a;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Earnings</a>
+      </div>
+    `
+  };
+}
+function forfeitEmail(affiliateName, leadName, amount) {
+  return {
+    subject: `Forfeit payment received \u2014 ${leadName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#0f172a;">Forfeit Protection Activated</h2>
+        <p style="color:#64748b;">Hi ${affiliateName},</p>
+        <p style="color:#64748b;">The business missed their 48-hour payment deadline for <strong>${leadName}</strong>. Per our default protection policy, the $${amount.toFixed(2)} deposit has been automatically transferred to your account.</p>
+        <a href="${process.env.WEBSITE_URL}/earnings" style="display:inline-block;background:#87CEEB;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">View Earnings</a>
+      </div>
+    `
+  };
+}
+function closedDeadlineReminderEmail(businessName, leadName, hoursLeft) {
+  return {
+    subject: `\u26A0\uFE0F ${hoursLeft}h left to pay for ${leadName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;">
+        ${brand}
+        <h2 style="color:#d97706;">Payment Deadline Approaching</h2>
+        <p style="color:#64748b;">Hi ${businessName},</p>
+        <p style="color:#64748b;">You have <strong>${hoursLeft} hours</strong> remaining to complete payment for the closed lead <strong>${leadName}</strong>. If payment is not received, the deposit will be automatically forfeited to the affiliate.</p>
+        <a href="${process.env.WEBSITE_URL}/submissions" style="display:inline-block;background:#d97706;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">Pay Now</a>
+      </div>
+    `
+  };
+}
+var _resend, brand;
 var init_email = __esm({
   "src/api/services/email.ts"() {
     init_dist();
     _resend = null;
+    brand = `
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+    <div style="width:36px;height:36px;background:#87CEEB;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+      <span style="color:#fff;font-weight:900;font-size:16px;letter-spacing:-1px;">R</span>
+    </div>
+    <span style="font-weight:800;font-size:20px;color:#0f172a;letter-spacing:-0.5px;">Referrd</span>
+  </div>
+`;
   }
 });
 
@@ -79628,11 +79860,11 @@ var init_mcp = __esm({
         options
       };
     };
-    withMcpAuth = (auth2, handler2) => {
+    withMcpAuth = (auth, handler2) => {
       return async (req) => {
-        const baseURL = getBaseURL(auth2.options.baseURL, auth2.options.basePath);
+        const baseURL = getBaseURL(auth.options.baseURL, auth.options.basePath);
         if (!baseURL && !isProduction) logger.warn("Unable to get the baseURL, please check your config!");
-        const session2 = await auth2.api.getMcpSession({ headers: req.headers });
+        const session2 = await auth.api.getMcpSession({ headers: req.headers });
         const wwwAuthenticateValue = `Bearer resource_metadata="${baseURL}/.well-known/oauth-protected-resource"`;
         if (!session2) return Response.json({
           jsonrpc: "2.0",
@@ -79652,9 +79884,9 @@ var init_mcp = __esm({
         return handler2(req, session2);
       };
     };
-    oAuthDiscoveryMetadata = (auth2) => {
+    oAuthDiscoveryMetadata = (auth) => {
       return async (request) => {
-        const res = await auth2.api.getMcpOAuthConfig();
+        const res = await auth.api.getMcpOAuthConfig();
         return new Response(JSON.stringify(res), {
           status: 200,
           headers: {
@@ -79667,9 +79899,9 @@ var init_mcp = __esm({
         });
       };
     };
-    oAuthProtectedResourceMetadata = (auth2) => {
+    oAuthProtectedResourceMetadata = (auth) => {
       return async (request) => {
-        const res = await auth2.api.getMCPProtectedResource();
+        const res = await auth.api.getMCPProtectedResource();
         return new Response(JSON.stringify(res), {
           status: 200,
           headers: {
@@ -87576,7 +87808,6 @@ var init_plugins = __esm({
 // src/api/auth.ts
 var auth_exports = {};
 __export(auth_exports, {
-  auth: () => auth,
   getAuth: () => getAuth
 });
 function generateReferralCode(name2, id) {
@@ -87616,24 +87847,24 @@ function getAuth() {
               const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
               await sendEmail2({
                 to: email3,
-                subject: "Your Safe Refer sign-in link",
+                subject: "Your Referrd sign-in link",
                 html: `
                   <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
-                      <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                        <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
+                      <div style="width:36px;height:36px;background:#87CEEB;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <span style="color:#fff;font-weight:900;font-size:16px;">R</span>
                       </div>
-                      <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
+                      <span style="font-weight:800;font-size:20px;color:#0f172a;letter-spacing:-0.5px;">Referrd</span>
                     </div>
                     <h2 style="color:#0f172a;margin:0 0 8px;">Your sign-in link</h2>
-                    <p style="color:#64748b;margin:0 0 24px;">Click below to sign in. This link expires in 10 minutes and can only be used once.</p>
-                    <a href="${url2}" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px;">Sign In to Safe Refer</a>
-                    <p style="color:#94a3b8;font-size:12px;margin-top:28px;">If you didn't request this, ignore this email.</p>
+                    <p style="color:#64748b;margin:0 0 24px;">Click below to sign in to Referrd. This link expires in 10 minutes and can only be used once.</p>
+                    <a href="${url2}" style="display:inline-block;background:#87CEEB;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:700;font-size:15px;">Sign in to Referrd</a>
+                    <p style="color:#94a3b8;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email.</p>
                   </div>
                 `
               });
             } catch (e) {
-              console.error("[auth] Failed to send magic link:", e);
+              console.error("[magic-link] Email failed:", e);
             }
           }
         })
@@ -87641,47 +87872,14 @@ function getAuth() {
       databaseHooks: {
         user: {
           create: {
-            async after(user2) {
-              const referralCode = generateReferralCode(user2.name, user2.id);
+            after: async (user2) => {
               try {
-                await db2.insert(users).values({
-                  id: user2.id,
-                  name: user2.name,
-                  email: user2.email,
-                  emailVerified: false,
-                  role: "affiliate",
-                  isAdmin: false,
-                  applicationStatus: "incomplete",
-                  referralCode,
-                  payoutEnabled: false,
-                  w9Completed: false,
-                  createdAt: /* @__PURE__ */ new Date(),
-                  updatedAt: /* @__PURE__ */ new Date()
-                }).onConflictDoNothing();
+                const db3 = getDb();
+                const { eq: eq2 } = await Promise.resolve().then(() => (init_drizzle_orm(), drizzle_orm_exports));
+                const referralCode = generateReferralCode(user2.name || "user", user2.id);
+                await db3.update(users).set({ referralCode }).where(eq2(users.id, user2.id));
               } catch (e) {
-                console.error("[auth] Failed to create user profile:", e);
-              }
-              try {
-                const { sendEmail: sendEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
-                await sendEmail2({
-                  to: user2.email,
-                  subject: "Welcome to Safe Refer",
-                  html: `
-                    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-                      <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
-                        <div style="width:36px;height:36px;background:#0EA5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                          <span style="color:#fff;font-weight:900;font-size:14px;">SR</span>
-                        </div>
-                        <span style="font-weight:700;font-size:18px;color:#0f172a;">Safe Refer</span>
-                      </div>
-                      <h2 style="color:#0f172a;margin:0 0 8px;">Welcome, ${user2.name}</h2>
-                      <p style="color:#64748b;margin:0 0 24px;">Your account is ready. Complete your profile to get started.</p>
-                      <a href="${process.env.WEBSITE_URL || process.env.BETTER_AUTH_URL}/onboarding" style="display:inline-block;background:#0EA5E9;color:#fff;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:600;">Complete Your Profile</a>
-                    </div>
-                  `
-                });
-              } catch (e) {
-                console.error("[auth] Failed to send welcome email:", e);
+                console.error("[auth hook] referral code gen failed:", e);
               }
             }
           }
@@ -87691,7 +87889,7 @@ function getAuth() {
   }
   return _auth;
 }
-var _auth, auth;
+var _auth;
 var init_auth = __esm({
   "src/api/auth.ts"() {
     init_dist8();
@@ -87700,11 +87898,6 @@ var init_auth = __esm({
     init_schema2();
     init_database();
     _auth = null;
-    auth = new Proxy({}, {
-      get(_target, prop, receiver) {
-        return Reflect.get(getAuth(), prop, receiver);
-      }
-    });
   }
 });
 
@@ -90153,7 +90346,7 @@ init_schema2();
 init_drizzle_orm();
 var authMiddleware = createMiddleware2(async (c, next) => {
   try {
-    const session2 = await auth.api.getSession({ headers: c.req.raw.headers });
+    const session2 = await getAuth().api.getSession({ headers: c.req.raw.headers });
     if (session2?.user) {
       try {
         const [profile] = await db.select().from(users).where(eq(users.id, session2.user.id));
@@ -90295,6 +90488,22 @@ var listings2 = new Hono2().get("/", requireAuth, requireApproved, async (c) => 
 init_database();
 init_schema2();
 init_drizzle_orm();
+function blur(val) {
+  if (!val) return "\u2014";
+  return "\u2588".repeat(Math.min(val.length, 12));
+}
+function blurSubmission(s, reveal) {
+  if (reveal) return s;
+  return {
+    ...s,
+    leadEmail: blur(s.leadEmail),
+    leadPhone: blur(s.leadPhone),
+    // Keep name blurred too — only show industry hint
+    leadName: s.leadName ? s.leadName.charAt(0) + "\u2588\u2588\u2588" : "\u2588\u2588\u2588",
+    leadCompany: blur(s.leadCompany),
+    notes: s.notes ? s.notes.substring(0, 30) + "\u2026" : "\u2014"
+  };
+}
 var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
   if (user2.role !== "affiliate" && !user2.isAdmin) {
@@ -90305,8 +90514,11 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
   if (!listing) return c.json({ error: "Listing not found" }, 404);
   if (listing.status !== "active") return c.json({ error: "Listing is not active" }, 400);
   const fitScore = body.notes && body.notes.length > 50 ? 80 : 50;
-  const deadline = /* @__PURE__ */ new Date();
-  deadline.setDate(deadline.getDate() + listing.payoutDeadlineDays);
+  const fitHints = [
+    body.leadCompany ? `Company: ${body.leadCompany.substring(0, 3)}***` : null,
+    `Fit score: ${fitScore}`,
+    `Submitted: ${(/* @__PURE__ */ new Date()).toLocaleDateString()}`
+  ].filter(Boolean).join(" \xB7 ");
   const [submission] = await db.insert(submissions).values({
     listingId: body.listingId,
     affiliateId: user2.id,
@@ -90316,10 +90528,12 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
     leadCompany: body.leadCompany ?? null,
     notes: body.notes ?? null,
     fitScore,
+    fitHints,
     disclosureSigned: body.disclosureSigned ?? false,
     disclosureSignedAt: body.disclosureSigned ? /* @__PURE__ */ new Date() : null,
     payoutAmount: listing.payoutAmount,
-    paymentDeadline: deadline
+    depositAmount: listing.payoutAmount * 0.25,
+    finalAmount: listing.payoutAmount * 0.75
   }).returning();
   await db.update(listings).set({ totalSubmissions: listing.totalSubmissions + 1, updatedAt: /* @__PURE__ */ new Date() }).where(eq(listings.id, body.listingId));
   return c.json({ submission }, 201);
@@ -90340,26 +90554,89 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
   const allSubs = await db.select().from(submissions).orderBy(desc(submissions.createdAt));
   const filtered = allSubs.filter((s) => myListingIds.includes(s.listingId));
   const listingMap = Object.fromEntries(myListings.map((l) => [l.id, l.title]));
-  return c.json({ submissions: filtered.map((s) => ({ ...s, listingTitle: listingMap[s.listingId] })) }, 200);
+  const result = filtered.map((s) => {
+    const reveal = s.paymentStatus === "deposit_paid" || s.paymentStatus === "fully_paid" || s.paymentStatus === "transferred";
+    return {
+      ...blurSubmission(s, reveal),
+      listingTitle: listingMap[s.listingId],
+      contactUnlocked: reveal
+    };
+  });
+  return c.json({ submissions: result }, 200);
 }).get("/:id", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
   const { id } = c.req.param();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
   if (!submission) return c.json({ error: "Not found" }, 404);
-  if (submission.affiliateId !== user2.id && !user2.isAdmin) {
-    const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
-    if (listing?.businessId !== user2.id) return c.json({ error: "Forbidden" }, 403);
+  if (submission.affiliateId === user2.id || user2.isAdmin) {
+    return c.json({ submission }, 200);
   }
-  return c.json({ submission }, 200);
-}).patch("/:id/status", requireAuth, requireApproved, async (c) => {
+  const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+  if (listing?.businessId !== user2.id) return c.json({ error: "Forbidden" }, 403);
+  const reveal = submission.paymentStatus === "deposit_paid" || submission.paymentStatus === "fully_paid" || submission.paymentStatus === "transferred";
+  return c.json({ submission: { ...blurSubmission(submission, reveal), contactUnlocked: reveal } }, 200);
+}).post("/:id/accept", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
   const { id } = c.req.param();
-  const body = await c.req.json();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
   if (!submission) return c.json({ error: "Not found" }, 404);
+  if (submission.status !== "pending" && submission.status !== "reviewing") {
+    return c.json({ error: "Lead is not in a state that can be accepted" }, 400);
+  }
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
   if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
-  const allowed2 = ["status", "adminNotes"];
+  await db.update(submissions).set({
+    status: "reviewing",
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, id));
+  return c.json({
+    submissionId: id,
+    depositAmount: submission.depositAmount ?? (submission.payoutAmount ?? 0) * 0.25,
+    totalPayout: submission.payoutAmount
+  }, 200);
+}).post("/:id/close", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const { id } = c.req.param();
+  const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
+  if (!submission) return c.json({ error: "Not found" }, 404);
+  if (submission.status !== "accepted") return c.json({ error: "Lead must be accepted before closing" }, 400);
+  if (submission.paymentStatus !== "deposit_paid") {
+    return c.json({ error: "Deposit must be paid to close a lead" }, 400);
+  }
+  const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+  if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const deadline = /* @__PURE__ */ new Date();
+  deadline.setHours(deadline.getHours() + 48);
+  await db.update(submissions).set({
+    status: "closed",
+    paymentDeadline: deadline,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, id));
+  return c.json({ deadline: deadline.toISOString(), finalAmount: submission.finalAmount }, 200);
+}).post("/:id/reject", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const { id } = c.req.param();
+  const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
+  if (!submission) return c.json({ error: "Not found" }, 404);
+  if (submission.paymentStatus !== "unpaid") {
+    return c.json({ error: "Cannot reject a lead that has been paid for" }, 400);
+  }
+  const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+  if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const [updated] = await db.update(submissions).set({
+    status: "rejected",
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, id)).returning();
+  return c.json({ submission: updated }, 200);
+}).patch("/:id/status", requireAuth, async (c) => {
+  const user2 = c.get("user");
+  if (!user2.isAdmin) return c.json({ error: "Admin only" }, 403);
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const allowed2 = ["status", "paymentStatus", "adminNotes"];
   const updates = {};
   for (const k of allowed2) if (k in body) updates[k] = body[k];
   updates.updatedAt = /* @__PURE__ */ new Date();
@@ -92737,7 +93014,7 @@ var StripeResource = class {
     this.path = makeURLInterpolator(rawPath);
     this.initialize(stripe, deprecatedUrlData);
   }
-  initialize(_stripe3, _deprecatedUrlData) {
+  initialize(_stripe4, _deprecatedUrlData) {
   }
   _makeRequest(method, path, params, options, spec) {
     const requestMethod = method.toUpperCase();
@@ -108203,22 +108480,66 @@ var stripeRouter = new Hono2().post("/connect/onboard", requireAuth, requireAppr
     await db.update(users).set({ payoutEnabled }).where(eq(users.id, user2.id));
   }
   return c.json({ connected: true, payoutEnabled }, 200);
-}).post("/pay/:submissionId", requireAuth, requireApproved, async (c) => {
+}).post("/deposit/:submissionId", requireAuth, requireApproved, async (c) => {
   const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
   const { submissionId } = c.req.param();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, submissionId));
   if (!submission) return c.json({ error: "Submission not found" }, 404);
+  if (submission.status !== "pending" && submission.status !== "reviewing") {
+    return c.json({ error: "Lead is not in a payable state" }, 400);
+  }
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
   if (!listing) return c.json({ error: "Listing not found" }, 404);
-  if (listing.businessId !== user2.id) return c.json({ error: "Forbidden" }, 403);
-  const amountCents = Math.round((submission.payoutAmount ?? listing.payoutAmount) * 100);
+  if (listing.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const totalPayout = submission.payoutAmount ?? listing.payoutAmount;
+  const depositAmount = Math.round(totalPayout * 0.25 * 100);
   const paymentIntent = await getStripe().paymentIntents.create({
-    amount: amountCents,
+    amount: depositAmount,
     currency: "usd",
-    metadata: { submissionId, listingId: listing.id, referrerId: submission.affiliateId }
+    metadata: {
+      submissionId,
+      listingId: listing.id,
+      affiliateId: submission.affiliateId,
+      type: "deposit",
+      totalPayout: String(totalPayout)
+    }
   });
-  await db.update(submissions).set({ stripePaymentIntentId: paymentIntent.id, updatedAt: /* @__PURE__ */ new Date() }).where(eq(submissions.id, submissionId));
-  return c.json({ clientSecret: paymentIntent.client_secret }, 200);
+  await db.update(submissions).set({
+    stripePaymentIntentId: paymentIntent.id,
+    depositAmount: totalPayout * 0.25,
+    finalAmount: totalPayout * 0.75,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, submissionId));
+  return c.json({ clientSecret: paymentIntent.client_secret, depositAmount: totalPayout * 0.25 }, 200);
+}).post("/final/:submissionId", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const { submissionId } = c.req.param();
+  const [submission] = await db.select().from(submissions).where(eq(submissions.id, submissionId));
+  if (!submission) return c.json({ error: "Submission not found" }, 404);
+  if (submission.status !== "closed") return c.json({ error: "Lead must be marked closed first" }, 400);
+  if (submission.paymentStatus !== "deposit_paid") {
+    return c.json({ error: "Deposit must be paid before final payment" }, 400);
+  }
+  const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+  if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const finalAmountCents = Math.round((submission.finalAmount ?? 0) * 100);
+  const paymentIntent = await getStripe().paymentIntents.create({
+    amount: finalAmountCents,
+    currency: "usd",
+    metadata: {
+      submissionId,
+      listingId: listing?.id,
+      affiliateId: submission.affiliateId,
+      type: "final"
+    }
+  });
+  await db.update(submissions).set({
+    stripePaymentIntentId: paymentIntent.id,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, submissionId));
+  return c.json({ clientSecret: paymentIntent.client_secret, finalAmount: submission.finalAmount }, 200);
 });
 
 // src/api/routes/webhooks.ts
@@ -108241,37 +108562,62 @@ var webhooksRouter = new Hono2().post("/stripe", async (c) => {
   }
   if (event.type === "payment_intent.succeeded") {
     const pi = event.data.object;
-    const { submissionId, referrerId } = pi.metadata;
+    const { submissionId, affiliateId, type, totalPayout } = pi.metadata;
     if (!submissionId) return c.json({ received: true }, 200);
     const [submission] = await db.select().from(submissions).where(eq(submissions.id, submissionId));
     if (!submission) return c.json({ received: true }, 200);
-    await db.update(submissions).set({
-      paymentStatus: "fully_paid",
-      status: "closed",
-      updatedAt: /* @__PURE__ */ new Date()
-    }).where(eq(submissions.id, submissionId));
-    try {
-      const [referrer] = await db.select().from(users).where(eq(users.id, referrerId));
-      if (referrer?.stripeAccountId && referrer?.payoutEnabled) {
-        const transfer = await getStripe2().transfers.create({
-          amount: pi.amount,
-          currency: "usd",
-          destination: referrer.stripeAccountId,
-          transfer_group: submissionId
-        });
-        await db.update(submissions).set({
-          stripeTransferId: transfer.id,
-          paymentStatus: "transferred",
-          updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq(submissions.id, submissionId));
-        await db.update(listings).set({
-          closedDeals: sql`${listings.closedDeals} + 1`,
-          totalPaidOut: sql`${listings.totalPaidOut} + ${pi.amount / 100}`,
-          updatedAt: /* @__PURE__ */ new Date()
-        }).where(eq(listings.id, submission.listingId));
+    if (type === "deposit") {
+      await db.update(submissions).set({
+        status: "accepted",
+        paymentStatus: "deposit_paid",
+        updatedAt: /* @__PURE__ */ new Date()
+      }).where(eq(submissions.id, submissionId));
+      try {
+        const [affiliate] = await db.select().from(users).where(eq(users.id, affiliateId));
+        const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+        if (affiliate?.email) {
+          const { sendEmail: sendEmail2, depositPaidEmail: depositPaidEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+          const tmpl = depositPaidEmail2(affiliate.name, submission.leadName, pi.amount / 100, listing?.title || "");
+          await sendEmail2({ to: affiliate.email, ...tmpl });
+        }
+      } catch (e) {
+        console.error("[webhook] deposit notify failed:", e);
       }
-    } catch (e) {
-      console.error("Transfer failed:", e);
+    }
+    if (type === "final") {
+      await db.update(submissions).set({
+        paymentStatus: "fully_paid",
+        updatedAt: /* @__PURE__ */ new Date()
+      }).where(eq(submissions.id, submissionId));
+      try {
+        const [affiliate] = await db.select().from(users).where(eq(users.id, affiliateId));
+        if (affiliate?.stripeAccountId && affiliate?.payoutEnabled) {
+          const totalPayoutNum = Number(totalPayout || 0);
+          const transferAmount = Math.round(pi.amount * 0.96);
+          const transfer = await getStripe2().transfers.create({
+            amount: transferAmount,
+            currency: "usd",
+            destination: affiliate.stripeAccountId,
+            transfer_group: submissionId
+          });
+          await db.update(submissions).set({
+            stripeTransferId: transfer.id,
+            paymentStatus: "transferred",
+            payoutAmount: transferAmount / 100,
+            updatedAt: /* @__PURE__ */ new Date()
+          }).where(eq(submissions.id, submissionId));
+          await db.update(listings).set({
+            closedDeals: sql`${listings.closedDeals} + 1`,
+            totalPaidOut: sql`${listings.totalPaidOut} + ${transferAmount / 100}`,
+            updatedAt: /* @__PURE__ */ new Date()
+          }).where(eq(listings.id, submission.listingId));
+          const { sendEmail: sendEmail2, payoutTransferredEmail: payoutTransferredEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+          const tmpl = payoutTransferredEmail2(affiliate.name, submission.leadName, transferAmount / 100);
+          await sendEmail2({ to: affiliate.email, ...tmpl }).catch(console.error);
+        }
+      } catch (e) {
+        console.error("[webhook] final transfer failed:", e);
+      }
     }
   }
   return c.json({ received: true }, 200);
@@ -108373,6 +108719,105 @@ var postsRouter = new Hono2().get("/", requireAuth, requireApproved, async (c) =
   return c.json({ success: true }, 200);
 });
 
+// src/api/jobs/forfeit.ts
+init_database();
+init_schema2();
+init_drizzle_orm();
+var _stripe3 = null;
+function getStripe3() {
+  if (!_stripe3 && process.env.STRIPE_SECRET_KEY) {
+    _stripe3 = new stripe_esm_node_default(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-05-27.dahlia" });
+  }
+  return _stripe3;
+}
+async function runForfeitJob() {
+  try {
+    const now2 = /* @__PURE__ */ new Date();
+    const expired = await db.select().from(submissions).where(
+      and(
+        eq(submissions.status, "closed"),
+        eq(submissions.paymentStatus, "deposit_paid"),
+        lt(submissions.paymentDeadline, now2)
+      )
+    );
+    for (const sub of expired) {
+      console.log(`[forfeit] Processing submission ${sub.id} \u2014 deadline passed`);
+      try {
+        await db.update(submissions).set({
+          status: "forfeited",
+          paymentStatus: "forfeited",
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(submissions.id, sub.id));
+        const stripe = getStripe3();
+        if (!stripe) continue;
+        const [affiliate] = await db.select().from(users).where(eq(users.id, sub.affiliateId));
+        if (affiliate?.stripeAccountId && affiliate?.payoutEnabled && sub.depositAmount) {
+          const transferAmount = Math.round(sub.depositAmount * 0.96 * 100);
+          const transfer = await stripe.transfers.create({
+            amount: transferAmount,
+            currency: "usd",
+            destination: affiliate.stripeAccountId,
+            transfer_group: sub.id,
+            metadata: { type: "forfeit", submissionId: sub.id }
+          });
+          await db.update(submissions).set({
+            stripeTransferId: transfer.id,
+            payoutAmount: transferAmount / 100,
+            updatedAt: /* @__PURE__ */ new Date()
+          }).where(eq(submissions.id, sub.id));
+          const { sendEmail: sendEmail2, forfeitEmail: forfeitEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+          const tmpl = forfeitEmail2(affiliate.name, sub.leadName, transferAmount / 100);
+          await sendEmail2({ to: affiliate.email, ...tmpl }).catch(console.error);
+        }
+      } catch (e) {
+        console.error(`[forfeit] Failed for submission ${sub.id}:`, e);
+      }
+    }
+  } catch (e) {
+    console.error("[forfeit] Job error:", e);
+  }
+}
+async function runDeadlineReminderJob() {
+  try {
+    const now2 = /* @__PURE__ */ new Date();
+    const in24h = new Date(now2.getTime() + 24 * 60 * 60 * 1e3);
+    const in25h = new Date(now2.getTime() + 25 * 60 * 60 * 1e3);
+    const approaching = await db.select().from(submissions).where(
+      and(
+        eq(submissions.status, "closed"),
+        eq(submissions.paymentStatus, "deposit_paid"),
+        lt(submissions.paymentDeadline, in25h)
+      )
+    );
+    for (const sub of approaching) {
+      if (!sub.paymentDeadline) continue;
+      const deadline = new Date(sub.paymentDeadline);
+      const hoursLeft = Math.round((deadline.getTime() - now2.getTime()) / (1e3 * 60 * 60));
+      if (hoursLeft < 0 || hoursLeft > 25) continue;
+      try {
+        const [listing] = await db.select().from(listings).where(eq(listings.id, sub.listingId));
+        if (!listing) continue;
+        const [business] = await db.select().from(users).where(eq(users.id, listing.businessId));
+        if (!business?.email) continue;
+        const { sendEmail: sendEmail2, closedDeadlineReminderEmail: closedDeadlineReminderEmail2 } = await Promise.resolve().then(() => (init_email(), email_exports));
+        const tmpl = closedDeadlineReminderEmail2(business.name, sub.leadName, hoursLeft);
+        await sendEmail2({ to: business.email, ...tmpl }).catch(console.error);
+      } catch (e) {
+        console.error(`[reminder] Failed for submission ${sub.id}:`, e);
+      }
+    }
+  } catch (e) {
+    console.error("[reminder] Job error:", e);
+  }
+}
+function startJobs() {
+  const FIVE_MINUTES = 5 * 60 * 1e3;
+  console.log("[jobs] Starting forfeit + reminder jobs (every 5 min)");
+  setInterval(runForfeitJob, FIVE_MINUTES);
+  setInterval(runDeadlineReminderJob, FIVE_MINUTES);
+  runForfeitJob().catch(console.error);
+}
+
 // src/api/index.ts
 init_drizzle_orm();
 async function ensurePostsTable() {
@@ -108409,8 +108854,8 @@ var app = new Hono2().use(
     exposeHeaders: ["set-auth-token"]
   })
 ).on(["GET", "POST"], "/api/auth/*", async (c) => {
-  const { auth: auth2 } = await Promise.resolve().then(() => (init_auth(), auth_exports));
-  return auth2.handler(c.req.raw);
+  const { auth } = await Promise.resolve().then(() => (init_auth(), auth_exports));
+  return auth.handler(c.req.raw);
 }).route("/webhooks", webhooksRouter).basePath("api").get("/health", (c) => c.json({ status: "ok", ts: Date.now() }, 200)).get("/dbtest", async (c) => {
   try {
     const { db: db2 } = await Promise.resolve().then(() => (init_database(), database_exports));
@@ -108421,6 +108866,7 @@ var app = new Hono2().use(
   }
 }).use("*", authMiddleware).route("/users", usersRouter).route("/listings", listings2).route("/submissions", submissions2).route("/admin", adminRouter).route("/stripe", stripeRouter).route("/affiliate", affiliateRouter).route("/posts", postsRouter);
 var api_default = app;
+startJobs();
 
 // api/index.ts
 var config3 = { maxDuration: 30 };

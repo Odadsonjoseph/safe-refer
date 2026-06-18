@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../lib/auth";
 import { useAuth } from "../lib/auth";
-import { loadStripe } from "@stripe/stripe-js";
+// @stripe/stripe-js imported lazily when needed
 
 interface Submission {
   id: string;
@@ -113,18 +113,13 @@ export default function Submissions() {
       const depositData = await depositRes.json();
       if (!depositRes.ok) throw new Error(depositData.error);
 
-      // Open Stripe.js payment
-      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
-      if (!stripe) throw new Error("Stripe not loaded");
-
-      const { error } = await stripe.redirectToCheckout({
-        // Use confirmCardPayment flow for embedded
-      } as any);
-
-      // Fallback: use confirmPayment with clientSecret
-      // For now show the deposit amount and a manual confirmation
-      setActionError(`Deposit of $${depositData.depositAmount?.toFixed(2)} required. Stripe payment collection coming soon — contact support to complete.`);
-      await load(role);
+      // Redirect to Payments page to complete deposit via Stripe Elements
+      // The payments page handles card collection for the clientSecret
+      if (depositData.clientSecret) {
+        window.location.href = `/payments?deposit=${sub.id}&cs=${encodeURIComponent(depositData.clientSecret)}`;
+      } else {
+        await load(role);
+      }
     } catch (e: any) {
       setActionError(e.message || "Action failed");
     } finally {
@@ -184,9 +179,12 @@ export default function Submissions() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      // Stripe.js payment flow would go here
-      setActionError(`Final payment of $${data.finalAmount?.toFixed(2)} initiated. Stripe Elements integration pending — contact support.`);
-      await load(role);
+      // Redirect to payments page for card collection
+      if (data.clientSecret) {
+        window.location.href = `/payments?final=${sub.id}&cs=${encodeURIComponent(data.clientSecret)}`;
+      } else {
+        await load(role);
+      }
     } catch (e: any) {
       setActionError(e.message || "Payment failed");
     } finally {

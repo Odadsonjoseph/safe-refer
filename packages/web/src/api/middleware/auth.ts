@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import { auth } from "../auth";
+import { getAuth } from "../auth";
 import { db } from "../database";
 import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
@@ -9,7 +9,7 @@ import type { AppEnv } from "../types";
 
 export const authMiddleware = createMiddleware<AppEnv>(async (c, next) => {
   try {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    const session = await getAuth().api.getSession({ headers: c.req.raw.headers });
     if (session?.user) {
       try {
         const [profile] = await db
