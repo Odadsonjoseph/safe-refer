@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
-import { DashboardLayout } from "../components/layout";
+
 import {
   CheckCircle,
   AlertCircle,
@@ -79,7 +79,7 @@ export default function PaymentsPage() {
     const label = payType === "deposit" ? "25% Deposit" : "75% Final Payment";
 
     return (
-      <DashboardLayout>
+      <>
         <div className="max-w-lg space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Complete Payment</h1>
@@ -101,12 +101,12 @@ export default function PaymentsPage() {
             />
           </Elements>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-3xl space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Payments</h1>
@@ -243,7 +243,7 @@ export default function PaymentsPage() {
           />
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }
 
