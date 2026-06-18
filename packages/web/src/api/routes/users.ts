@@ -211,17 +211,47 @@ export const usersRouter = new Hono<AppEnv>()
 
     const [affiliate] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
 
+    // Build flat payouts list for the earnings page
+    const withListings = await Promise.all(allSubs.map(async (s) => {
+      const [listing] = await db
+        .select({ title: schema.listings.title })
+        .from(schema.listings)
+        .where(eq(schema.listings.id, s.listingId));
+      return { ...s, listingTitle: listing?.title };
+    }));
+
+    const payouts = [
+      ...withListings.map((s) => ({
+        id: s.id,
+        amount: s.payoutAmount ?? 0,
+        status: s.paymentStatus === "transferred" ? "transferred" : s.paymentStatus === "fully_paid" ? "transferred" : "pending",
+        type: "direct",
+        leadName: s.leadName,
+        listingTitle: (s as any).listingTitle,
+        createdAt: s.createdAt?.toISOString() ?? new Date().toISOString(),
+      })),
+      ...overrides.map((o) => ({
+        id: o.id,
+        amount: o.overrideAmount ?? 0,
+        status: o.status === "paid" ? "transferred" : "pending",
+        type: "override",
+        leadName: undefined,
+        listingTitle: undefined,
+        createdAt: o.createdAt?.toISOString() ?? new Date().toISOString(),
+      })),
+    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     return c.json({
+      totalEarned,
+      pendingPayout,
+      overrideEarned,
+      overridePending,
+      payouts,
       stats: {
-        totalEarned,
-        pendingPayout,
         closedDeals,
         approvedLeads,
-        overrideEarned,
-        overridePending,
         totalWithOverrides: totalEarned + overrideEarned,
       },
-      recentSubmissions: allSubs.slice(0, 10),
       payoutEnabled: affiliate?.payoutEnabled ?? false,
       referralCode: affiliate?.referralCode ?? null,
     }, 200);
@@ -325,16 +355,27 @@ export const usersRouter = new Hono<AppEnv>()
       .from(schema.referralOverrides)
       .where(eq(schema.referralOverrides.affiliateId, user.id));
 
+    const overrideEarned = overrides.filter((o) => o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0);
+    const overridePending = overrides.filter((o) => o.status === "pending").reduce((a, o) => a + o.overrideAmount, 0);
+
     return c.json({
       referralCode: affiliate?.referralCode,
       referralUrl: `${process.env.WEBSITE_URL || ""}/sign-up?ref=${affiliate?.referralCode}`,
+      overrideEarned,
+      overridePending,
       totalReferred: referred.length,
       activeAffiliates: referred.filter((u) => u.applicationStatus === "approved").length,
-      overrides: {
-        total: overrides.length,
-        earned: overrides.filter((o) => o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0),
-        pending: overrides.filter((o) => o.status === "pending").reduce((a, o) => a + o.overrideAmount, 0),
-      },
+      // Both names for compatibility
+      referredUsers: referred.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        applicationStatus: u.applicationStatus,
+        createdAt: u.createdAt?.toISOString() ?? null,
+        totalSubmissions: 0,
+        overrideEarned: overrides.filter((o) => o.referredUserId === u.id && o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0),
+      })),
       referred: referred.map((u) => ({
         id: u.id,
         name: u.name,

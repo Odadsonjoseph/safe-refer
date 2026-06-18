@@ -92,8 +92,12 @@ export function useAuth() {
     if (cached) setProfile(cached);
     else setProfileLoading(true);
 
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000); // 8s max
+
     fetch("/api/users/me", {
       headers: { Authorization: `Bearer ${getToken()}` },
+      signal: controller.signal,
     })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
@@ -103,7 +107,10 @@ export function useAuth() {
         }
       })
       .catch(() => {})
-      .finally(() => setProfileLoading(false));
+      .finally(() => {
+        clearTimeout(timeout);
+        setProfileLoading(false);
+      });
   }, [authUser?.id]);
 
   // Merge: DB profile fields override auth session fields (role, applicationStatus, etc.)

@@ -98,6 +98,7 @@ export default function Submissions() {
 
   useEffect(() => {
     if (!userLoading && role) load(role);
+    else if (!userLoading && !role) setLoading(false);
   }, [userLoading, role]);
 
   // ── Accept: no payment, just starts qualification window ──────────────────

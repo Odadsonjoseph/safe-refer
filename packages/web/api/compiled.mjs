@@ -8929,6 +8929,8 @@ var init_schema2 = __esm({
       payoutAmount: real("payout_amount").notNull(),
       payoutTrigger: text("payout_trigger").notNull(),
       payoutDeadlineDays: integer("payout_deadline_days").notNull().default(30),
+      // Hours a business has to mark a lead as qualified after accepting (48 or 96)
+      qualificationWindowHours: integer("qualification_window_hours").notNull().default(72),
       status: text("status", { enum: ["active", "paused", "closed"] }).notNull().default("active"),
       // Requirements shown to affiliates
       requirements: text("requirements"),
@@ -8957,7 +8959,7 @@ var init_schema2 = __esm({
       fitHints: text("fit_hints"),
       // Status
       status: text("status", {
-        enum: ["pending", "reviewing", "accepted", "rejected", "closed", "forfeited"]
+        enum: ["pending", "reviewing", "qualified", "accepted", "rejected", "closed", "forfeited"]
       }).notNull().default("pending"),
       // Payment lifecycle — admin manages payouts
       paymentStatus: text("payment_status", {
@@ -8970,6 +8972,8 @@ var init_schema2 = __esm({
       stripePaymentIntentId: text("stripe_payment_intent_id"),
       stripeTransferId: text("stripe_transfer_id"),
       paymentDeadline: timestamp("payment_deadline"),
+      qualifiedDeadline: timestamp("qualified_deadline"),
+      // deadline to mark lead as qualified after accept
       // E-sig
       disclosureSigned: boolean("disclosure_signed").notNull().default(false),
       disclosureSignedAt: timestamp("disclosure_signed_at"),
@@ -90581,13 +90585,42 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
   const { id } = c.req.param();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
   if (!submission) return c.json({ error: "Not found" }, 404);
-  if (submission.status !== "pending" && submission.status !== "reviewing") {
+  if (submission.status !== "pending") {
     return c.json({ error: "Lead is not in a state that can be accepted" }, 400);
   }
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
   if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const windowHours = listing?.qualificationWindowHours ?? 72;
+  const qualifiedDeadline = /* @__PURE__ */ new Date();
+  qualifiedDeadline.setHours(qualifiedDeadline.getHours() + windowHours);
   await db.update(submissions).set({
     status: "reviewing",
+    qualifiedDeadline,
+    updatedAt: /* @__PURE__ */ new Date()
+  }).where(eq(submissions.id, id));
+  return c.json({
+    submissionId: id,
+    qualifiedDeadline: qualifiedDeadline.toISOString(),
+    windowHours,
+    depositAmount: submission.depositAmount ?? (submission.payoutAmount ?? 0) * 0.25,
+    totalPayout: submission.payoutAmount
+  }, 200);
+}).post("/:id/qualify", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const { id } = c.req.param();
+  const [submission] = await db.select().from(submissions).where(eq(submissions.id, id));
+  if (!submission) return c.json({ error: "Not found" }, 404);
+  if (submission.status !== "reviewing") {
+    return c.json({ error: "Lead must be in review before qualifying" }, 400);
+  }
+  const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
+  if (listing?.businessId !== user2.id && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  if (submission.qualifiedDeadline && /* @__PURE__ */ new Date() > submission.qualifiedDeadline) {
+    return c.json({ error: "Qualification window has expired for this lead" }, 400);
+  }
+  await db.update(submissions).set({
+    status: "qualified",
     updatedAt: /* @__PURE__ */ new Date()
   }).where(eq(submissions.id, id));
   return c.json({
@@ -90784,17 +90817,41 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   const overrideEarned = overrides.filter((o) => o.status === "paid").reduce((acc, o) => acc + (o.overrideAmount ?? 0), 0);
   const overridePending = overrides.filter((o) => o.status === "pending").reduce((acc, o) => acc + (o.overrideAmount ?? 0), 0);
   const [affiliate] = await db.select().from(users).where(eq(users.id, user2.id));
+  const withListings = await Promise.all(allSubs.map(async (s) => {
+    const [listing] = await db.select({ title: listings.title }).from(listings).where(eq(listings.id, s.listingId));
+    return { ...s, listingTitle: listing?.title };
+  }));
+  const payouts = [
+    ...withListings.map((s) => ({
+      id: s.id,
+      amount: s.payoutAmount ?? 0,
+      status: s.paymentStatus === "transferred" ? "transferred" : s.paymentStatus === "fully_paid" ? "transferred" : "pending",
+      type: "direct",
+      leadName: s.leadName,
+      listingTitle: s.listingTitle,
+      createdAt: s.createdAt?.toISOString() ?? (/* @__PURE__ */ new Date()).toISOString()
+    })),
+    ...overrides.map((o) => ({
+      id: o.id,
+      amount: o.overrideAmount ?? 0,
+      status: o.status === "paid" ? "transferred" : "pending",
+      type: "override",
+      leadName: void 0,
+      listingTitle: void 0,
+      createdAt: o.createdAt?.toISOString() ?? (/* @__PURE__ */ new Date()).toISOString()
+    }))
+  ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return c.json({
+    totalEarned,
+    pendingPayout,
+    overrideEarned,
+    overridePending,
+    payouts,
     stats: {
-      totalEarned,
-      pendingPayout,
       closedDeals,
       approvedLeads,
-      overrideEarned,
-      overridePending,
       totalWithOverrides: totalEarned + overrideEarned
     },
-    recentSubmissions: allSubs.slice(0, 10),
     payoutEnabled: affiliate?.payoutEnabled ?? false,
     referralCode: affiliate?.referralCode ?? null
   }, 200);
@@ -90854,16 +90911,26 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   const [affiliate] = await db.select().from(users).where(eq(users.id, user2.id));
   const referred = await db.select().from(users).where(eq(users.referredBy, user2.id));
   const overrides = await db.select().from(referralOverrides).where(eq(referralOverrides.affiliateId, user2.id));
+  const overrideEarned = overrides.filter((o) => o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0);
+  const overridePending = overrides.filter((o) => o.status === "pending").reduce((a, o) => a + o.overrideAmount, 0);
   return c.json({
     referralCode: affiliate?.referralCode,
     referralUrl: `${process.env.WEBSITE_URL || ""}/sign-up?ref=${affiliate?.referralCode}`,
+    overrideEarned,
+    overridePending,
     totalReferred: referred.length,
     activeAffiliates: referred.filter((u) => u.applicationStatus === "approved").length,
-    overrides: {
-      total: overrides.length,
-      earned: overrides.filter((o) => o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0),
-      pending: overrides.filter((o) => o.status === "pending").reduce((a, o) => a + o.overrideAmount, 0)
-    },
+    // Both names for compatibility
+    referredUsers: referred.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      applicationStatus: u.applicationStatus,
+      createdAt: u.createdAt?.toISOString() ?? null,
+      totalSubmissions: 0,
+      overrideEarned: overrides.filter((o) => o.referredUserId === u.id && o.status === "paid").reduce((a, o) => a + o.overrideAmount, 0)
+    })),
     referred: referred.map((u) => ({
       id: u.id,
       name: u.name,
@@ -108465,8 +108532,8 @@ var stripeRouter = new Hono2().post("/connect/onboard", requireAuth, requireAppr
   }
   const link = await getStripe().accountLinks.create({
     account: accountId,
-    refresh_url: `${process.env.WEBSITE_URL}/payments?refresh=1`,
-    return_url: `${process.env.WEBSITE_URL}/payments?success=1`,
+    refresh_url: `${process.env.WEBSITE_URL}/settings?refresh=1`,
+    return_url: `${process.env.WEBSITE_URL}/settings?success=1`,
     type: "account_onboarding"
   });
   return c.json({ url: link.url }, 200);
@@ -108486,8 +108553,8 @@ var stripeRouter = new Hono2().post("/connect/onboard", requireAuth, requireAppr
   const { submissionId } = c.req.param();
   const [submission] = await db.select().from(submissions).where(eq(submissions.id, submissionId));
   if (!submission) return c.json({ error: "Submission not found" }, 404);
-  if (submission.status !== "pending" && submission.status !== "reviewing") {
-    return c.json({ error: "Lead is not in a payable state" }, 400);
+  if (submission.status !== "qualified") {
+    return c.json({ error: "Lead must be marked as qualified before paying deposit" }, 400);
   }
   const [listing] = await db.select().from(listings).where(eq(listings.id, submission.listingId));
   if (!listing) return c.json({ error: "Listing not found" }, 404);
@@ -108540,6 +108607,42 @@ var stripeRouter = new Hono2().post("/connect/onboard", requireAuth, requireAppr
     updatedAt: /* @__PURE__ */ new Date()
   }).where(eq(submissions.id, submissionId));
   return c.json({ clientSecret: paymentIntent.client_secret, finalAmount: submission.finalAmount }, 200);
+}).get("/payment-methods", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const [profile] = await db.select().from(users).where(eq(users.id, user2.id));
+  if (!profile?.stripeCustomerId) return c.json({ paymentMethods: [] }, 200);
+  const methods2 = await getStripe().paymentMethods.list({
+    customer: profile.stripeCustomerId,
+    type: "card"
+  });
+  return c.json({
+    paymentMethods: methods2.data.map((m) => ({
+      id: m.id,
+      brand: m.card?.brand,
+      last4: m.card?.last4,
+      expMonth: m.card?.exp_month,
+      expYear: m.card?.exp_year
+    }))
+  }, 200);
+}).post("/setup-intent", requireAuth, requireApproved, async (c) => {
+  const user2 = c.get("user");
+  if (user2.role !== "business" && !user2.isAdmin) return c.json({ error: "Forbidden" }, 403);
+  const [profile] = await db.select().from(users).where(eq(users.id, user2.id));
+  let customerId = profile?.stripeCustomerId;
+  if (!customerId) {
+    const customer = await getStripe().customers.create({
+      email: user2.email,
+      metadata: { userId: user2.id }
+    });
+    customerId = customer.id;
+    await db.update(users).set({ stripeCustomerId: customerId }).where(eq(users.id, user2.id));
+  }
+  const setupIntent = await getStripe().setupIntents.create({
+    customer: customerId,
+    payment_method_types: ["card"]
+  });
+  return c.json({ clientSecret: setupIntent.client_secret }, 200);
 });
 
 // src/api/routes/webhooks.ts
@@ -108730,6 +108833,31 @@ function getStripe3() {
   }
   return _stripe3;
 }
+async function runQualificationExpiryJob() {
+  try {
+    const now2 = /* @__PURE__ */ new Date();
+    const expiredReviewing = await db.select().from(submissions).where(
+      and(
+        eq(submissions.status, "reviewing"),
+        lt(submissions.qualifiedDeadline, now2)
+      )
+    );
+    for (const sub of expiredReviewing) {
+      console.log(`[qualify-expiry] Submission ${sub.id} \u2014 qualification window expired, auto-rejecting`);
+      try {
+        await db.update(submissions).set({
+          status: "rejected",
+          adminNotes: "Auto-rejected: qualification window expired without business marking lead qualified.",
+          updatedAt: /* @__PURE__ */ new Date()
+        }).where(eq(submissions.id, sub.id));
+      } catch (e) {
+        console.error(`[qualify-expiry] Failed for submission ${sub.id}:`, e);
+      }
+    }
+  } catch (e) {
+    console.error("[qualify-expiry] Job error:", e);
+  }
+}
 async function runForfeitJob() {
   try {
     const now2 = /* @__PURE__ */ new Date();
@@ -108812,10 +108940,12 @@ async function runDeadlineReminderJob() {
 }
 function startJobs() {
   const FIVE_MINUTES = 5 * 60 * 1e3;
-  console.log("[jobs] Starting forfeit + reminder jobs (every 5 min)");
+  console.log("[jobs] Starting forfeit + reminder + qualification-expiry jobs (every 5 min)");
   setInterval(runForfeitJob, FIVE_MINUTES);
   setInterval(runDeadlineReminderJob, FIVE_MINUTES);
+  setInterval(runQualificationExpiryJob, FIVE_MINUTES);
   runForfeitJob().catch(console.error);
+  runQualificationExpiryJob().catch(console.error);
 }
 
 // src/api/index.ts

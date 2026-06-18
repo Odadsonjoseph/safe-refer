@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "../lib/api";
 import { authClient } from "../lib/auth";
 
 import {
@@ -38,24 +37,38 @@ export default function PaymentsPage() {
   const finalSubId = params.get("final") || "";
   const isInlinePayment = !!(inlineClientSecret && (depositSubId || finalSubId));
 
-  // Stripe Connect status (referrers)
+  async function getToken() {
+    const session = await authClient.getSession();
+    return (session as any)?.data?.session?.token ?? "";
+  }
+
+  // Stripe Connect status (affiliates — to receive payouts)
   const connectStatus = useQuery({
     queryKey: ["stripe-connect-status"],
-    queryFn: async () => (await (api.stripe as any).connect.status.$get()).json(),
-    enabled: !!user && (user?.role === "referrer" || user?.role === "both"),
+    queryFn: async () => {
+      const token = await getToken();
+      return fetch("/api/stripe/connect/status", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+    },
+    enabled: !!user && user?.role === "affiliate",
   });
 
-  // Poster's submissions needing payment
+  // Business: incoming submissions needing payment
   const posterSubmissions = useQuery({
     queryKey: ["poster-submissions-pay"],
-    queryFn: async () => (await (api.submissions as any).poster.$get()).json(),
-    enabled: !!user && !isInlinePayment,
+    queryFn: async () => {
+      const token = await getToken();
+      return fetch("/api/submissions/incoming", { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+    },
+    enabled: !!user && (user?.role === "business" || user?.isAdmin) && !isInlinePayment,
   });
 
   const onboard = useMutation({
     mutationFn: async () => {
-      const res = await (api.stripe as any).connect.onboard.$post();
-      return res.json();
+      const token = await getToken();
+      return fetch("/api/stripe/connect/onboard", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(r => r.json());
     },
     onSuccess: (data: any) => {
       if (data.url) window.location.href = data.url;
@@ -70,8 +83,8 @@ export default function PaymentsPage() {
     (s) => s.status === "closed" && s.paymentStatus === "deposit_paid"
   );
 
-  const isPosterOrAdmin = user?.role === "poster" || user?.role === "both" || user?.isAdmin;
-  const isReferrer = user?.role === "referrer" || user?.role === "both";
+  const isPosterOrAdmin = user?.role === "business" || user?.isAdmin;
+  const isReferrer = user?.role === "affiliate";
 
   // ─── Inline card payment mode ─────────────────────────────────────────────
   if (isInlinePayment) {
@@ -401,10 +414,15 @@ function PayRow({
     setPaying(true);
     setError("");
     try {
+      const session = await authClient.getSession();
+      const token = (session as any)?.data?.session?.token ?? "";
       const endpoint = payType === "deposit"
         ? `/api/stripe/deposit/${s.id}`
         : `/api/stripe/final/${s.id}`;
-      const res = await fetch(endpoint, { method: "POST" });
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
       if (data.clientSecret) {

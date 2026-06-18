@@ -56,7 +56,7 @@ export default function ListingDetailPage() {
   });
 
   const l = (listingQuery.data as any)?.listing;
-  const isAffiliate = user?.role === "affiliate" || user?.role === "referrer" || user?.role === "both";
+  const isAffiliate = user?.role === "affiliate";
   const isBusiness = user?.role === "business";
 
   return (

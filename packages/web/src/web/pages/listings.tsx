@@ -245,7 +245,10 @@ export default function Listings() {
     }
   }
 
-  useEffect(() => { if (role) loadListings(); }, [role]);
+  useEffect(() => {
+    if (role) loadListings();
+    else if ((user as any) !== undefined && !role) setLoading(false);
+  }, [role, user]);
 
   function openCreate() {
     setEditListing(null);
