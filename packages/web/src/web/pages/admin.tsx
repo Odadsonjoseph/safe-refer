@@ -224,37 +224,64 @@ export default function Admin() {
             )}
             <div className="space-y-3">
               {(applicationsData?.applications ?? []).map((app: any) => (
-                <div key={app.id} className="bg-white rounded-xl border border-slate-200 p-5 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-900">{app.name}</p>
-                    <p className="text-sm text-slate-500">{app.email}</p>
-                    <div className="flex gap-2 mt-2">
-                      <span className="text-xs bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full font-medium capitalize">
-                        {app.role}
-                      </span>
-                      {app.phone && (
-                        <span className="text-xs text-slate-400">{app.phone}</span>
+                <div key={app.id} className="bg-white rounded-xl border border-slate-200 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-slate-900">{app.name}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${app.role === "affiliate" ? "bg-sky-50 text-sky-700" : "bg-amber-50 text-amber-700"}`}>
+                          {app.role}
+                        </span>
+                        {app.idVerified ? (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-50 text-green-700">✓ ID Verified ({Math.round((app.idVerificationScore ?? 0) * 100)}%)</span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-50 text-red-600">✗ ID Not Verified</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 mt-0.5">{app.email}</p>
+                      {app.phone && <p className="text-xs text-slate-400">{app.phone}</p>}
+
+                      {/* Address */}
+                      {app.addressLine1 && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          📍 {app.addressLine1}{app.addressLine2 ? `, ${app.addressLine2}` : ""}, {app.city}, {app.state} {app.zip}
+                        </p>
                       )}
+
+                      {/* Business info */}
+                      {app.role === "business" && app.companyName && (
+                        <p className="text-xs text-slate-500 mt-1">🏢 {app.companyName}{app.industry ? ` · ${app.industry}` : ""}</p>
+                      )}
+                      {app.role === "business" && app.businessDescription && (
+                        <p className="text-xs text-slate-400 mt-1 line-clamp-2 max-w-lg">{app.businessDescription}</p>
+                      )}
+
+                      {/* Affiliate bio */}
+                      {app.role === "affiliate" && app.bio && (
+                        <p className="text-xs text-slate-400 mt-1 truncate max-w-xs">{app.bio}</p>
+                      )}
+
+                      {/* Terms */}
+                      <p className={`text-xs mt-1 font-medium ${app.termsSigned ? "text-green-600" : "text-red-400"}`}>
+                        {app.termsSigned ? `✓ Terms signed${app.termsSignedAt ? ` on ${new Date(app.termsSignedAt).toLocaleDateString()}` : ""}` : "✗ Terms not signed"}
+                      </p>
                     </div>
-                    {app.bio && (
-                      <p className="text-xs text-slate-400 mt-1 truncate max-w-xs">{app.bio}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => approveMutation.mutate({ userId: app.id, action: "approve" })}
-                      disabled={approveMutation.isPending}
-                      className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => approveMutation.mutate({ userId: app.id, action: "reject" })}
-                      disabled={approveMutation.isPending}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
-                    >
-                      Reject
-                    </button>
+                    <div className="flex flex-col gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => approveMutation.mutate({ userId: app.id, action: "approve" })}
+                        disabled={approveMutation.isPending}
+                        className="px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => approveMutation.mutate({ userId: app.id, action: "reject" })}
+                        disabled={approveMutation.isPending}
+                        className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

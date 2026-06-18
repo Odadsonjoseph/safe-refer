@@ -45,8 +45,8 @@ function ProtectedRoute({
   if (adminOnly) return <Redirect to="/dashboard" />;
 
   if (user.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
-  if (user.role === "business" && user.applicationStatus === "submitted") return <Redirect to="/pending" />;
-  if (user.role === "business" && user.applicationStatus === "rejected") return <Redirect to="/pending" />;
+  if (user.applicationStatus === "submitted") return <Redirect to="/pending" />;
+  if (user.applicationStatus === "rejected") return <Redirect to="/pending" />;
 
   return <Layout><Component /></Layout>;
 }
