@@ -24,7 +24,20 @@ export const users = pgTable("users", {
   idFrontUrl: text("id_front_url"),
   idBackUrl: text("id_back_url"),
   selfieUrl: text("selfie_url"),
+  idVerified: boolean("id_verified").notNull().default(false),
+  selfieVerified: boolean("selfie_verified").notNull().default(false),
+  idVerificationScore: real("id_verification_score"),
+  idRejectionReason: text("id_rejection_reason"),
   phone: text("phone"),
+  // Address
+  addressLine1: text("address_line1"),
+  addressLine2: text("address_line2"),
+  city: text("city"),
+  state: text("state"),
+  zip: text("zip"),
+  // Terms
+  termsSigned: boolean("terms_signed").notNull().default(false),
+  termsSignedAt: timestamp("terms_signed_at"),
   // W-9
   w9LegalName: text("w9_legal_name"),
   w9Ssn: text("w9_ssn"),

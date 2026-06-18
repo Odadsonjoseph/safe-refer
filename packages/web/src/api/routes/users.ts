@@ -6,6 +6,127 @@ import { eq, desc, count } from "drizzle-orm";
 import { requireAuth, requireApproved } from "../middleware/auth";
 
 export const usersRouter = new Hono<AppEnv>()
+  // GPT-4 Vision ID verification
+  .post("/verify-id", requireAuth, async (c) => {
+    const user = c.get("user")!;
+    const body = await c.req.json();
+    const { idFrontBase64, selfieBase64 } = body as { idFrontBase64: string; selfieBase64: string };
+
+    if (!idFrontBase64 || !selfieBase64) {
+      return c.json({ error: "idFrontBase64 and selfieBase64 are required" }, 400);
+    }
+
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (!openaiKey) {
+      return c.json({ error: "OpenAI API key not configured" }, 500);
+    }
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          max_tokens: 500,
+          messages: [
+            {
+              role: "system",
+              content: `You are an identity verification specialist. Analyze the provided government ID and selfie photo.
+              
+              Evaluate:
+              1. Is the first image a real government-issued ID (driver's license, passport, state ID)? Not a screenshot or fake?
+              2. Is the second image a live selfie photo of a real person? Not a screen/printout/photo-of-photo?
+              3. Do the faces in the ID and selfie appear to match the same person?
+              
+              Respond ONLY with valid JSON in this exact format:
+              {"passed": boolean, "score": number (0.0-1.0), "reason": "string (brief explanation, max 100 chars)"}
+              
+              Be strict but fair. Score 0.8+ = clear pass. Score below 0.6 = fail.`,
+            },
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Please verify this government ID and selfie:",
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: idFrontBase64.startsWith("data:") ? idFrontBase64 : `data:image/jpeg;base64,${idFrontBase64}`,
+                    detail: "high",
+                  },
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: selfieBase64.startsWith("data:") ? selfieBase64 : `data:image/jpeg;base64,${selfieBase64}`,
+                    detail: "high",
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error("OpenAI error:", errText);
+        return c.json({ error: "Verification service error" }, 500);
+      }
+
+      const data = await response.json() as any;
+      const content = data.choices?.[0]?.message?.content ?? "";
+      
+      // Parse the JSON response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        return c.json({ error: "Could not parse verification result" }, 500);
+      }
+      
+      const result = JSON.parse(jsonMatch[0]) as { passed: boolean; score: number; reason: string };
+
+      // Save result to DB
+      await db
+        .update(schema.users)
+        .set({
+          idVerified: result.passed,
+          selfieVerified: result.passed,
+          idVerificationScore: result.score,
+          idRejectionReason: result.passed ? null : result.reason,
+          idFrontUrl: idFrontBase64.substring(0, 200), // Store truncated ref only
+          selfieUrl: selfieBase64.substring(0, 200),
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.users.id, user.id));
+
+      return c.json(result, 200);
+    } catch (err: any) {
+      console.error("verify-id error:", err);
+      return c.json({ error: "Verification failed", details: err.message }, 500);
+    }
+  })
+
+  // Submit final application (marks as submitted for admin review)
+  .post("/me/finalize-application", requireAuth, async (c) => {
+    const user = c.get("user")!;
+    const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
+    if (!current) return c.json({ error: "User not found" }, 404);
+    if (current.applicationStatus === "approved") {
+      return c.json({ user: current }, 200); // already approved, no-op
+    }
+    const [updated] = await db
+      .update(schema.users)
+      .set({ applicationStatus: "submitted", updatedAt: new Date() })
+      .where(eq(schema.users.id, user.id))
+      .returning();
+    return c.json({ user: updated }, 200);
+  })
+
   // Get current user profile
   .get("/me", requireAuth, async (c) => {
     const user = c.get("user")!;
@@ -61,6 +182,9 @@ export const usersRouter = new Hono<AppEnv>()
       "companyName", "companyWebsite", "companySize", "industry",
       "businessDescription", "ein",
       "idFrontUrl", "idBackUrl", "selfieUrl",
+      "idVerified", "selfieVerified", "idVerificationScore", "idRejectionReason",
+      "addressLine1", "addressLine2", "city", "state", "zip",
+      "termsSigned", "termsSignedAt",
       "w9LegalName", "w9Ssn", "w9Address", "w9City", "w9State", "w9Zip", "w9Completed",
     ];
     const updates: Record<string, any> = {};
@@ -71,24 +195,8 @@ export const usersRouter = new Hono<AppEnv>()
 
     const [current] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
 
-    // Affiliates get auto-approved after completing profile
-    if (
-      current?.role === "affiliate" &&
-      current?.applicationStatus === "incomplete" &&
-      body.phone
-    ) {
-      updates.applicationStatus = "approved";
-    }
-
-    // Businesses go to submitted for admin review
-    if (
-      current?.role === "business" &&
-      current?.applicationStatus === "incomplete" &&
-      body.companyName &&
-      body.phone
-    ) {
-      updates.applicationStatus = "submitted";
-    }
+    // Both affiliates and businesses go through admin review — no auto-approve
+    // applicationStatus is set to "submitted" explicitly via /me/submit-application
 
     const [updated] = await db
       .update(schema.users)
@@ -136,10 +244,9 @@ export const usersRouter = new Hono<AppEnv>()
     };
 
     if (role === "affiliate") {
-      // Affiliates get auto-approved
+      // Affiliates now go through the full wizard — no auto-approve
       if (body.phone) updates.phone = body.phone;
       if (body.bio) updates.bio = body.bio;
-      updates.applicationStatus = "approved";
     } else {
       // Businesses go to submitted for admin review
       if (body.phone) updates.phone = body.phone;
@@ -147,7 +254,6 @@ export const usersRouter = new Hono<AppEnv>()
       if (body.website) updates.companyWebsite = body.website;
       if (body.industry) updates.industry = body.industry;
       if (body.description) updates.businessDescription = body.description;
-      updates.applicationStatus = "submitted";
     }
 
     // Handle referral code from sign-up URL (?ref=CODE)

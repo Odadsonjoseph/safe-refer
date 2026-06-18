@@ -8895,7 +8895,20 @@ var init_schema2 = __esm({
       idFrontUrl: text("id_front_url"),
       idBackUrl: text("id_back_url"),
       selfieUrl: text("selfie_url"),
+      idVerified: boolean("id_verified").notNull().default(false),
+      selfieVerified: boolean("selfie_verified").notNull().default(false),
+      idVerificationScore: real("id_verification_score"),
+      idRejectionReason: text("id_rejection_reason"),
       phone: text("phone"),
+      // Address
+      addressLine1: text("address_line1"),
+      addressLine2: text("address_line2"),
+      city: text("city"),
+      state: text("state"),
+      zip: text("zip"),
+      // Terms
+      termsSigned: boolean("terms_signed").notNull().default(false),
+      termsSignedAt: timestamp("terms_signed_at"),
       // W-9
       w9LegalName: text("w9_legal_name"),
       w9Ssn: text("w9_ssn"),
@@ -90690,7 +90703,105 @@ var submissions2 = new Hono2().post("/", requireAuth, requireApproved, async (c)
 init_database();
 init_schema2();
 init_drizzle_orm();
-var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
+var usersRouter = new Hono2().post("/verify-id", requireAuth, async (c) => {
+  const user2 = c.get("user");
+  const body = await c.req.json();
+  const { idFrontBase64, selfieBase64 } = body;
+  if (!idFrontBase64 || !selfieBase64) {
+    return c.json({ error: "idFrontBase64 and selfieBase64 are required" }, 400);
+  }
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!openaiKey) {
+    return c.json({ error: "OpenAI API key not configured" }, 500);
+  }
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openaiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        max_tokens: 500,
+        messages: [
+          {
+            role: "system",
+            content: `You are an identity verification specialist. Analyze the provided government ID and selfie photo.
+              
+              Evaluate:
+              1. Is the first image a real government-issued ID (driver's license, passport, state ID)? Not a screenshot or fake?
+              2. Is the second image a live selfie photo of a real person? Not a screen/printout/photo-of-photo?
+              3. Do the faces in the ID and selfie appear to match the same person?
+              
+              Respond ONLY with valid JSON in this exact format:
+              {"passed": boolean, "score": number (0.0-1.0), "reason": "string (brief explanation, max 100 chars)"}
+              
+              Be strict but fair. Score 0.8+ = clear pass. Score below 0.6 = fail.`
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Please verify this government ID and selfie:"
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: idFrontBase64.startsWith("data:") ? idFrontBase64 : `data:image/jpeg;base64,${idFrontBase64}`,
+                  detail: "high"
+                }
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: selfieBase64.startsWith("data:") ? selfieBase64 : `data:image/jpeg;base64,${selfieBase64}`,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ]
+      })
+    });
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("OpenAI error:", errText);
+      return c.json({ error: "Verification service error" }, 500);
+    }
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content ?? "";
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return c.json({ error: "Could not parse verification result" }, 500);
+    }
+    const result = JSON.parse(jsonMatch[0]);
+    await db.update(users).set({
+      idVerified: result.passed,
+      selfieVerified: result.passed,
+      idVerificationScore: result.score,
+      idRejectionReason: result.passed ? null : result.reason,
+      idFrontUrl: idFrontBase64.substring(0, 200),
+      // Store truncated ref only
+      selfieUrl: selfieBase64.substring(0, 200),
+      updatedAt: /* @__PURE__ */ new Date()
+    }).where(eq(users.id, user2.id));
+    return c.json(result, 200);
+  } catch (err) {
+    console.error("verify-id error:", err);
+    return c.json({ error: "Verification failed", details: err.message }, 500);
+  }
+}).post("/me/finalize-application", requireAuth, async (c) => {
+  const user2 = c.get("user");
+  const [current] = await db.select().from(users).where(eq(users.id, user2.id));
+  if (!current) return c.json({ error: "User not found" }, 404);
+  if (current.applicationStatus === "approved") {
+    return c.json({ user: current }, 200);
+  }
+  const [updated] = await db.update(users).set({ applicationStatus: "submitted", updatedAt: /* @__PURE__ */ new Date() }).where(eq(users.id, user2.id)).returning();
+  return c.json({ user: updated }, 200);
+}).get("/me", requireAuth, async (c) => {
   const user2 = c.get("user");
   const [profile] = await db.select().from(users).where(eq(users.id, user2.id));
   if (!profile) {
@@ -90736,6 +90847,17 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
     "idFrontUrl",
     "idBackUrl",
     "selfieUrl",
+    "idVerified",
+    "selfieVerified",
+    "idVerificationScore",
+    "idRejectionReason",
+    "addressLine1",
+    "addressLine2",
+    "city",
+    "state",
+    "zip",
+    "termsSigned",
+    "termsSignedAt",
     "w9LegalName",
     "w9Ssn",
     "w9Address",
@@ -90750,12 +90872,6 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   }
   updates.updatedAt = /* @__PURE__ */ new Date();
   const [current] = await db.select().from(users).where(eq(users.id, user2.id));
-  if (current?.role === "affiliate" && current?.applicationStatus === "incomplete" && body.phone) {
-    updates.applicationStatus = "approved";
-  }
-  if (current?.role === "business" && current?.applicationStatus === "incomplete" && body.companyName && body.phone) {
-    updates.applicationStatus = "submitted";
-  }
   const [updated] = await db.update(users).set(updates).where(eq(users.id, user2.id)).returning();
   return c.json({ user: updated }, 200);
 }).post("/me/submit-application", requireAuth, async (c) => {
@@ -90785,14 +90901,12 @@ var usersRouter = new Hono2().get("/me", requireAuth, async (c) => {
   if (role2 === "affiliate") {
     if (body.phone) updates.phone = body.phone;
     if (body.bio) updates.bio = body.bio;
-    updates.applicationStatus = "approved";
   } else {
     if (body.phone) updates.phone = body.phone;
     if (body.companyName) updates.companyName = body.companyName;
     if (body.website) updates.companyWebsite = body.website;
     if (body.industry) updates.industry = body.industry;
     if (body.description) updates.businessDescription = body.description;
-    updates.applicationStatus = "submitted";
   }
   const refCode = body.referredBy;
   if (refCode) {
