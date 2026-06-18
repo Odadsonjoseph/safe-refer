@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { authClient } from "../lib/auth";
 import { useAuth } from "../lib/auth";
-// @stripe/stripe-js imported lazily when needed
 
 interface Submission {
   id: string;
@@ -12,15 +11,14 @@ interface Submission {
   notes?: string;
   fitScore?: number;
   fitHints?: string;
-  status: "pending" | "reviewing" | "accepted" | "rejected" | "closed" | "forfeited";
+  status: "pending" | "reviewing" | "qualified" | "accepted" | "rejected" | "closed" | "forfeited";
   paymentStatus: string;
   payoutAmount: number;
   depositAmount?: number;
   finalAmount?: number;
   paymentDeadline?: string;
+  qualifiedDeadline?: string;
   listingTitle?: string;
-  businessName?: string;
-  affiliateName?: string;
   contactUnlocked?: boolean;
   createdAt: string;
 }
@@ -28,10 +26,21 @@ interface Submission {
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-amber-50 text-amber-600 border-amber-200",
   reviewing: "bg-blue-50 text-blue-600 border-blue-200",
+  qualified: "bg-indigo-50 text-indigo-600 border-indigo-200",
   accepted: "bg-green-50 text-green-600 border-green-200",
   rejected: "bg-red-50 text-red-500 border-red-200",
   closed: "bg-purple-50 text-purple-600 border-purple-200",
   forfeited: "bg-gray-100 text-gray-500 border-gray-200",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Pending",
+  reviewing: "In Review",
+  qualified: "Qualified",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  closed: "Closed",
+  forfeited: "Forfeited",
 };
 
 const PAY_STATUS_STYLES: Record<string, string> = {
@@ -42,7 +51,7 @@ const PAY_STATUS_STYLES: Record<string, string> = {
   forfeited: "text-red-400",
 };
 
-function TimeLeft({ deadline }: { deadline: string }) {
+function TimeLeft({ deadline, label = "left" }: { deadline: string; label?: string }) {
   const d = new Date(deadline);
   const diff = d.getTime() - Date.now();
   if (diff <= 0) return <span className="text-red-500 text-xs font-medium">Deadline passed</span>;
@@ -51,7 +60,7 @@ function TimeLeft({ deadline }: { deadline: string }) {
   const urgent = hours < 6;
   return (
     <span className={`text-xs font-medium ${urgent ? "text-red-500" : "text-amber-600"}`}>
-      {hours}h {mins}m left to pay
+      {hours}h {mins}m {label}
     </span>
   );
 }
@@ -61,11 +70,10 @@ export default function Submissions() {
   const role = user?.role as string;
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "reviewing" | "accepted" | "closed" | "rejected">("all");
+  const [filter, setFilter] = useState<string>("all");
   const [selected, setSelected] = useState<Submission | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
-  const [payingDeposit, setPayingDeposit] = useState(false);
   const [payingFinal, setPayingFinal] = useState(false);
 
   async function getToken() {
@@ -92,20 +100,43 @@ export default function Submissions() {
     if (!userLoading && role) load(role);
   }, [userLoading, role]);
 
+  // ── Accept: no payment, just starts qualification window ──────────────────
   async function handleAccept(sub: Submission) {
     setActionLoading(true);
     setActionError("");
     try {
       const token = await getToken();
-      // Mark reviewing first
-      const acceptRes = await fetch(`/api/submissions/${sub.id}/accept`, {
+      const res = await fetch(`/api/submissions/${sub.id}/accept`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      const acceptData = await acceptRes.json();
-      if (!acceptRes.ok) throw new Error(acceptData.error);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      await load(role);
+      // Update selected so modal reflects new state
+      setSelected((prev) => prev ? { ...prev, status: "reviewing", qualifiedDeadline: data.qualifiedDeadline } : null);
+    } catch (e: any) {
+      setActionError(e.message || "Action failed");
+    } finally {
+      setActionLoading(false);
+    }
+  }
 
-      // Get Stripe deposit payment intent
+  // ── Qualify: triggers 25% deposit payment ─────────────────────────────────
+  async function handleQualify(sub: Submission) {
+    setActionLoading(true);
+    setActionError("");
+    try {
+      const token = await getToken();
+      // Step 1: mark qualified
+      const qualRes = await fetch(`/api/submissions/${sub.id}/qualify`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const qualData = await qualRes.json();
+      if (!qualRes.ok) throw new Error(qualData.error);
+
+      // Step 2: create deposit payment intent
       const depositRes = await fetch(`/api/stripe/deposit/${sub.id}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
@@ -113,8 +144,7 @@ export default function Submissions() {
       const depositData = await depositRes.json();
       if (!depositRes.ok) throw new Error(depositData.error);
 
-      // Redirect to Payments page to complete deposit via Stripe Elements
-      // The payments page handles card collection for the clientSecret
+      // Redirect to Payments page for card collection
       if (depositData.clientSecret) {
         window.location.href = `/payments?deposit=${sub.id}&cs=${encodeURIComponent(depositData.clientSecret)}`;
       } else {
@@ -148,7 +178,7 @@ export default function Submissions() {
   }
 
   async function handleReject(sub: Submission) {
-    if (!confirm(`Reject this lead? This cannot be undone.`)) return;
+    if (!confirm("Reject this lead? This cannot be undone.")) return;
     setActionLoading(true);
     setActionError("");
     try {
@@ -179,7 +209,6 @@ export default function Submissions() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      // Redirect to payments page for card collection
       if (data.clientSecret) {
         window.location.href = `/payments?final=${sub.id}&cs=${encodeURIComponent(data.clientSecret)}`;
       } else {
@@ -192,7 +221,7 @@ export default function Submissions() {
     }
   }
 
-  const allStatuses = ["all", "pending", "reviewing", "accepted", "closed", "rejected"] as const;
+  const allStatuses = ["all", "pending", "reviewing", "qualified", "accepted", "closed", "rejected"];
   const filtered = submissions.filter((s) => filter === "all" || s.status === filter);
 
   return (
@@ -203,25 +232,25 @@ export default function Submissions() {
         </h1>
         <p className="text-gray-500 text-sm mt-0.5">
           {role === "business"
-            ? "Review leads · pay 25% deposit to accept · mark closed when deal is done"
+            ? "Review leads · mark qualified to unlock contact · close when deal is done"
             : "Track the status of your submitted leads and earnings"}
         </p>
       </div>
 
-      {/* Money flow explainer for business */}
+      {/* How it works — business */}
       {role === "business" && (
         <div className="bg-sky-50 border border-sky-200 rounded-2xl p-4 mb-6">
           <p className="text-xs font-semibold text-sky-700 uppercase tracking-wide mb-2">How it works</p>
           <div className="flex items-center gap-2 flex-wrap text-xs text-sky-700">
-            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">1. Review lead</span>
+            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">1. Accept lead</span>
             <span className="text-sky-400">→</span>
-            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">2. Pay 25% deposit to unlock contact</span>
+            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">2. Review (48–96h window)</span>
             <span className="text-sky-400">→</span>
-            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">3. Mark closed</span>
+            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">3. Mark Qualified → pay 25% deposit → contact unlocked</span>
             <span className="text-sky-400">→</span>
-            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">4. Pay remaining 75% (48h)</span>
+            <span className="bg-white rounded-lg px-3 py-1.5 font-medium border border-sky-200">4. Close deal → pay 75% within 48h</span>
           </div>
-          <p className="text-xs text-sky-600 mt-2">⚠️ Missed 48h deadline = deposit forfeited to affiliate automatically.</p>
+          <p className="text-xs text-sky-600 mt-2">⚠️ Don't qualify within window = lead auto-rejected. Miss 48h final payment = deposit forfeited to affiliate.</p>
         </div>
       )}
 
@@ -235,7 +264,7 @@ export default function Submissions() {
               filter === f ? "bg-sky-400 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-sky-300"
             }`}
           >
-            {f}
+            {f === "all" ? "All" : (STATUS_LABEL[f] ?? f)}
             {f !== "all" && (
               <span className={`ml-1.5 text-xs ${filter === f ? "opacity-80" : "text-gray-400"}`}>
                 ({submissions.filter((s) => s.status === f).length})
@@ -269,68 +298,74 @@ export default function Submissions() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-semibold text-gray-900">{s.leadName}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${STATUS_STYLES[s.status]}`}>
-                      {s.status}
+                      {STATUS_LABEL[s.status] ?? s.status}
                     </span>
                     {s.paymentStatus && s.paymentStatus !== "unpaid" && (
                       <span className={`text-xs font-medium ${PAY_STATUS_STYLES[s.paymentStatus]}`}>
                         · {s.paymentStatus.replace(/_/g, " ")}
                       </span>
                     )}
-                    {/* Contact blurred indicator */}
                     {role === "business" && !s.contactUnlocked && (
-                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">🔒 Pay to unlock</span>
+                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">🔒 locked</span>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-0.5">{s.listingTitle}</p>
                   {s.fitHints && role === "business" && !s.contactUnlocked && (
                     <p className="text-xs text-gray-400 mt-1 italic">{s.fitHints}</p>
                   )}
+                  {/* Qualification deadline */}
+                  {role === "business" && s.status === "reviewing" && s.qualifiedDeadline && (
+                    <p className="text-xs mt-1">
+                      <span className="text-gray-400">Qualify by: </span>
+                      <TimeLeft deadline={s.qualifiedDeadline} label="to qualify" />
+                    </p>
+                  )}
+                  {/* Final payment deadline */}
+                  {role === "business" && s.status === "closed" && s.paymentDeadline && (
+                    <div className="mt-1">
+                      <TimeLeft deadline={s.paymentDeadline} label="to pay balance" />
+                    </div>
+                  )}
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(s.createdAt).toLocaleDateString()}
                   </p>
-                  {s.status === "closed" && s.paymentDeadline && role === "business" && (
-                    <div className="mt-1">
-                      <TimeLeft deadline={s.paymentDeadline} />
-                    </div>
-                  )}
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="font-bold text-sky-600">${(s.payoutAmount ?? 0).toFixed(2)}</p>
-                  {s.depositAmount && (
-                    <p className="text-xs text-gray-400">25% deposit: ${(s.depositAmount).toFixed(2)}</p>
-                  )}
-                  {/* Quick actions for business */}
+                  {/* Quick actions */}
                   {role === "business" && s.status === "pending" && (
-                    <div className="flex gap-2 mt-2 justify-end">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelected(s); setActionError(""); }}
-                        className="text-xs bg-green-50 text-green-600 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition"
-                      >
-                        Review
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelected(s); setActionError(""); }}
+                      className="mt-2 text-xs bg-green-50 text-green-600 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition"
+                    >
+                      Review
+                    </button>
+                  )}
+                  {role === "business" && s.status === "reviewing" && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelected(s); setActionError(""); }}
+                      className="mt-2 text-xs bg-indigo-50 text-indigo-600 border border-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition"
+                    >
+                      Mark Qualified
+                    </button>
                   )}
                   {role === "business" && s.status === "accepted" && (
-                    <div className="mt-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleClose(s); }}
-                        disabled={actionLoading}
-                        className="text-xs bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition disabled:opacity-50"
-                      >
-                        Mark Closed
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleClose(s); }}
+                      disabled={actionLoading}
+                      className="mt-2 text-xs bg-purple-50 text-purple-600 border border-purple-200 px-3 py-1.5 rounded-lg hover:bg-purple-100 transition disabled:opacity-50"
+                    >
+                      Mark Closed
+                    </button>
                   )}
                   {role === "business" && s.status === "closed" && s.paymentStatus === "deposit_paid" && (
-                    <div className="mt-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handlePayFinal(s); }}
-                        disabled={payingFinal}
-                        className="text-xs bg-sky-500 text-white px-3 py-1.5 rounded-lg hover:bg-sky-600 transition disabled:opacity-50"
-                      >
-                        Pay Remaining
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handlePayFinal(s); }}
+                      disabled={payingFinal}
+                      className="mt-2 text-xs bg-sky-500 text-white px-3 py-1.5 rounded-lg hover:bg-sky-600 transition disabled:opacity-50"
+                    >
+                      Pay Remaining
+                    </button>
                   )}
                 </div>
               </div>
@@ -352,14 +387,27 @@ export default function Submissions() {
               </button>
             </div>
 
-            {/* Contact blurring notice */}
+            {/* Contact locked notice */}
             {role === "business" && !selected.contactUnlocked && (
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex items-start gap-2">
                 <span className="text-amber-500 flex-shrink-0">🔒</span>
                 <div>
                   <p className="text-sm font-semibold text-amber-800">Contact locked</p>
-                  <p className="text-xs text-amber-600 mt-0.5">Pay the 25% deposit to unlock full contact info. This prevents lead theft before commitment.</p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Mark this lead as qualified and pay the 25% deposit to unlock full contact info.
+                  </p>
                 </div>
+              </div>
+            )}
+
+            {/* Qualification window banner */}
+            {role === "business" && selected.status === "reviewing" && selected.qualifiedDeadline && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
+                <p className="text-xs font-semibold text-blue-800 mb-1">Qualification Window</p>
+                <TimeLeft deadline={selected.qualifiedDeadline} label="to mark qualified" />
+                <p className="text-xs text-blue-600 mt-1">
+                  Review the lead info. If it looks good, mark it as qualified — you'll pay the 25% deposit and contact info unlocks.
+                </p>
               </div>
             )}
 
@@ -371,9 +419,9 @@ export default function Submissions() {
                 { label: "Company", value: selected.leadCompany || "—" },
                 { label: "Listing", value: selected.listingTitle },
                 { label: "Total Payout", value: `$${(selected.payoutAmount ?? 0).toFixed(2)}` },
-                { label: "Deposit (25%)", value: `$${(selected.depositAmount ?? selected.payoutAmount * 0.25).toFixed(2)}` },
-                { label: "Final (75%)", value: `$${(selected.finalAmount ?? selected.payoutAmount * 0.75).toFixed(2)}` },
-                { label: "Status", value: selected.status },
+                { label: "Deposit (25%)", value: `$${(selected.depositAmount ?? (selected.payoutAmount ?? 0) * 0.25).toFixed(2)}` },
+                { label: "Final (75%)", value: `$${(selected.finalAmount ?? (selected.payoutAmount ?? 0) * 0.75).toFixed(2)}` },
+                { label: "Status", value: STATUS_LABEL[selected.status] ?? selected.status },
                 { label: "Payment", value: selected.paymentStatus?.replace(/_/g, " ") || "unpaid" },
                 { label: "Submitted", value: new Date(selected.createdAt).toLocaleString() },
               ].map((item) => (
@@ -396,15 +444,15 @@ export default function Submissions() {
               )}
               {selected.status === "closed" && selected.paymentDeadline && role === "business" && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-amber-800 mb-1">Payment Deadline</p>
-                  <TimeLeft deadline={selected.paymentDeadline} />
+                  <p className="text-xs font-semibold text-amber-800 mb-1">Final Payment Deadline</p>
+                  <TimeLeft deadline={selected.paymentDeadline} label="to pay" />
                   <p className="text-xs text-amber-600 mt-1">Miss this → deposit auto-forfeited to affiliate.</p>
                 </div>
               )}
             </div>
 
             {actionError && (
-              <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
                 {actionError}
               </div>
             )}
@@ -417,9 +465,29 @@ export default function Submissions() {
                     <button
                       onClick={() => handleAccept(selected)}
                       disabled={actionLoading}
-                      className="w-full bg-green-500 text-white rounded-xl py-3 font-semibold hover:bg-green-600 transition disabled:opacity-50 text-sm"
+                      className="w-full bg-sky-500 text-white rounded-xl py-3 font-semibold hover:bg-sky-600 transition disabled:opacity-50 text-sm"
                     >
-                      {actionLoading ? "Processing…" : `Accept & Pay $${(selected.depositAmount ?? selected.payoutAmount * 0.25).toFixed(2)} Deposit`}
+                      {actionLoading ? "Processing…" : "Accept Lead (starts review window)"}
+                    </button>
+                    <button
+                      onClick={() => handleReject(selected)}
+                      disabled={actionLoading}
+                      className="w-full bg-red-50 text-red-500 border border-red-200 rounded-xl py-2.5 font-semibold hover:bg-red-100 transition disabled:opacity-50 text-sm"
+                    >
+                      Reject Lead
+                    </button>
+                  </>
+                )}
+                {selected.status === "reviewing" && (
+                  <>
+                    <button
+                      onClick={() => handleQualify(selected)}
+                      disabled={actionLoading}
+                      className="w-full bg-indigo-500 text-white rounded-xl py-3 font-semibold hover:bg-indigo-600 transition disabled:opacity-50 text-sm"
+                    >
+                      {actionLoading
+                        ? "Processing…"
+                        : `Mark Qualified & Pay $${(selected.depositAmount ?? (selected.payoutAmount ?? 0) * 0.25).toFixed(2)} Deposit`}
                     </button>
                     <button
                       onClick={() => handleReject(selected)}

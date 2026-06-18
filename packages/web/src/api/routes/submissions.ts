@@ -155,9 +155,8 @@ export const submissions = new Hono<AppEnv>()
     return c.json({ submission: { ...blurSubmission(submission, reveal), contactUnlocked: reveal } }, 200);
   })
 
-  // ─── Business: accept a lead (triggers deposit payment) ──────────────────
-  // Note: actual status update happens in Stripe webhook after deposit paid
-  // This endpoint just validates and returns deposit amount for the UI
+  // ─── Business: accept a lead ─────────────────────────────────────────────
+  // No payment at accept — starts qualification window (48–96h depending on industry)
   .post("/:id/accept", requireAuth, requireApproved, async (c) => {
     const user = c.get("user")!;
     if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
@@ -165,16 +164,57 @@ export const submissions = new Hono<AppEnv>()
 
     const [submission] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, id));
     if (!submission) return c.json({ error: "Not found" }, 404);
-    if (submission.status !== "pending" && submission.status !== "reviewing") {
+    if (submission.status !== "pending") {
       return c.json({ error: "Lead is not in a state that can be accepted" }, 400);
     }
 
     const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
     if (listing?.businessId !== user.id && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
 
-    // Move to reviewing — deposit payment will flip it to accepted
+    // Use listing's qualification window (48 or 96h), default 72h
+    const windowHours = listing?.qualificationWindowHours ?? 72;
+    const qualifiedDeadline = new Date();
+    qualifiedDeadline.setHours(qualifiedDeadline.getHours() + windowHours);
+
     await db.update(schema.submissions).set({
       status: "reviewing",
+      qualifiedDeadline,
+      updatedAt: new Date(),
+    }).where(eq(schema.submissions.id, id));
+
+    return c.json({
+      submissionId: id,
+      qualifiedDeadline: qualifiedDeadline.toISOString(),
+      windowHours,
+      depositAmount: submission.depositAmount ?? (submission.payoutAmount ?? 0) * 0.25,
+      totalPayout: submission.payoutAmount,
+    }, 200);
+  })
+
+  // ─── Business: mark lead as qualified (triggers 25% deposit payment) ──────
+  // Called after business vets the lead during review window. Unlocks contact info.
+  .post("/:id/qualify", requireAuth, requireApproved, async (c) => {
+    const user = c.get("user")!;
+    if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
+    const { id } = c.req.param();
+
+    const [submission] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, id));
+    if (!submission) return c.json({ error: "Not found" }, 404);
+    if (submission.status !== "reviewing") {
+      return c.json({ error: "Lead must be in review before qualifying" }, 400);
+    }
+
+    const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
+    if (listing?.businessId !== user.id && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+    // Check qualification window hasn't expired
+    if (submission.qualifiedDeadline && new Date() > submission.qualifiedDeadline) {
+      return c.json({ error: "Qualification window has expired for this lead" }, 400);
+    }
+
+    // Mark as qualified — deposit payment intent will be created on next step via /api/stripe/deposit/:id
+    await db.update(schema.submissions).set({
+      status: "qualified",
       updatedAt: new Date(),
     }).where(eq(schema.submissions.id, id));
 
@@ -185,7 +225,7 @@ export const submissions = new Hono<AppEnv>()
     }, 200);
   })
 
-  // ─── Business: mark deal closed (starts 48hr payment clock) ──────────────
+  // ─── Business: mark deal closed (starts 48hr final payment clock) ─────────
   .post("/:id/close", requireAuth, requireApproved, async (c) => {
     const user = c.get("user")!;
     if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
@@ -201,7 +241,7 @@ export const submissions = new Hono<AppEnv>()
     const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
     if (listing?.businessId !== user.id && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
 
-    // 48-hour payment deadline
+    // 48-hour final payment deadline
     const deadline = new Date();
     deadline.setHours(deadline.getHours() + 48);
 

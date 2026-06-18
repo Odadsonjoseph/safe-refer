@@ -31,8 +31,8 @@ export const stripeRouter = new Hono<AppEnv>()
 
     const link = await getStripe().accountLinks.create({
       account: accountId,
-      refresh_url: `${process.env.WEBSITE_URL}/payments?refresh=1`,
-      return_url: `${process.env.WEBSITE_URL}/payments?success=1`,
+      refresh_url: `${process.env.WEBSITE_URL}/settings?refresh=1`,
+      return_url: `${process.env.WEBSITE_URL}/settings?success=1`,
       type: "account_onboarding",
     });
 
@@ -55,8 +55,7 @@ export const stripeRouter = new Hono<AppEnv>()
     return c.json({ connected: true, payoutEnabled }, 200);
   })
 
-  // ─── STEP 1: Business pays 25% deposit to accept ───────────────────────────
-  // Called when business clicks "Accept" on a lead
+  // ─── STEP 1: Business pays 25% deposit (after lead marked qualified) ───────
   .post("/deposit/:submissionId", requireAuth, requireApproved, async (c) => {
     const user = c.get("user")!;
     if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
@@ -64,8 +63,8 @@ export const stripeRouter = new Hono<AppEnv>()
 
     const [submission] = await db.select().from(schema.submissions).where(eq(schema.submissions.id, submissionId));
     if (!submission) return c.json({ error: "Submission not found" }, 404);
-    if (submission.status !== "pending" && submission.status !== "reviewing") {
-      return c.json({ error: "Lead is not in a payable state" }, 400);
+    if (submission.status !== "qualified") {
+      return c.json({ error: "Lead must be marked as qualified before paying deposit" }, 400);
     }
 
     const [listing] = await db.select().from(schema.listings).where(eq(schema.listings.id, submission.listingId));
@@ -132,4 +131,53 @@ export const stripeRouter = new Hono<AppEnv>()
     }).where(eq(schema.submissions.id, submissionId));
 
     return c.json({ clientSecret: paymentIntent.client_secret, finalAmount: submission.finalAmount }, 200);
+  })
+
+  // ─── Business: get saved payment methods ───────────────────────────────────
+  .get("/payment-methods", requireAuth, requireApproved, async (c) => {
+    const user = c.get("user")!;
+    if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+    const [profile] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
+    if (!profile?.stripeCustomerId) return c.json({ paymentMethods: [] }, 200);
+
+    const methods = await getStripe().paymentMethods.list({
+      customer: profile.stripeCustomerId,
+      type: "card",
+    });
+
+    return c.json({
+      paymentMethods: methods.data.map((m) => ({
+        id: m.id,
+        brand: m.card?.brand,
+        last4: m.card?.last4,
+        expMonth: m.card?.exp_month,
+        expYear: m.card?.exp_year,
+      })),
+    }, 200);
+  })
+
+  // ─── Business: create SetupIntent to save a card ──────────────────────────
+  .post("/setup-intent", requireAuth, requireApproved, async (c) => {
+    const user = c.get("user")!;
+    if (user.role !== "business" && !user.isAdmin) return c.json({ error: "Forbidden" }, 403);
+
+    const [profile] = await db.select().from(schema.users).where(eq(schema.users.id, user.id)) as any[];
+
+    let customerId = (profile as any)?.stripeCustomerId;
+    if (!customerId) {
+      const customer = await getStripe().customers.create({
+        email: user.email,
+        metadata: { userId: user.id },
+      });
+      customerId = customer.id;
+      await db.update(schema.users).set({ stripeCustomerId: customerId } as any).where(eq(schema.users.id, user.id));
+    }
+
+    const setupIntent = await getStripe().setupIntents.create({
+      customer: customerId,
+      payment_method_types: ["card"],
+    });
+
+    return c.json({ clientSecret: setupIntent.client_secret }, 200);
   });

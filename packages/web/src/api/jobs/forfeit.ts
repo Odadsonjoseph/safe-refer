@@ -16,6 +16,37 @@ function getStripe() {
   return _stripe;
 }
 
+export async function runQualificationExpiryJob() {
+  // Auto-reject leads in "reviewing" that have passed their qualification window
+  try {
+    const now = new Date();
+    const expiredReviewing = await db
+      .select()
+      .from(schema.submissions)
+      .where(
+        and(
+          eq(schema.submissions.status, "reviewing"),
+          lt(schema.submissions.qualifiedDeadline, now)
+        )
+      );
+
+    for (const sub of expiredReviewing) {
+      console.log(`[qualify-expiry] Submission ${sub.id} — qualification window expired, auto-rejecting`);
+      try {
+        await db.update(schema.submissions).set({
+          status: "rejected",
+          adminNotes: "Auto-rejected: qualification window expired without business marking lead qualified.",
+          updatedAt: new Date(),
+        }).where(eq(schema.submissions.id, sub.id));
+      } catch (e) {
+        console.error(`[qualify-expiry] Failed for submission ${sub.id}:`, e);
+      }
+    }
+  } catch (e) {
+    console.error("[qualify-expiry] Job error:", e);
+  }
+}
+
 export async function runForfeitJob() {
   try {
     const now = new Date();
@@ -126,9 +157,11 @@ export async function runDeadlineReminderJob() {
 
 export function startJobs() {
   const FIVE_MINUTES = 5 * 60 * 1000;
-  console.log("[jobs] Starting forfeit + reminder jobs (every 5 min)");
+  console.log("[jobs] Starting forfeit + reminder + qualification-expiry jobs (every 5 min)");
   setInterval(runForfeitJob, FIVE_MINUTES);
   setInterval(runDeadlineReminderJob, FIVE_MINUTES);
+  setInterval(runQualificationExpiryJob, FIVE_MINUTES);
   // Run once immediately on startup
   runForfeitJob().catch(console.error);
+  runQualificationExpiryJob().catch(console.error);
 }

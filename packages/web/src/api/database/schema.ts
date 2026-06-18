@@ -60,6 +60,8 @@ export const listings = pgTable("listings", {
   payoutAmount: real("payout_amount").notNull(),
   payoutTrigger: text("payout_trigger").notNull(),
   payoutDeadlineDays: integer("payout_deadline_days").notNull().default(30),
+  // Hours a business has to mark a lead as qualified after accepting (48 or 96)
+  qualificationWindowHours: integer("qualification_window_hours").notNull().default(72),
   status: text("status", { enum: ["active", "paused", "closed"] }).notNull().default("active"),
   // Requirements shown to affiliates
   requirements: text("requirements"),
@@ -90,7 +92,7 @@ export const submissions = pgTable("submissions", {
   fitHints: text("fit_hints"),
   // Status
   status: text("status", {
-    enum: ["pending", "reviewing", "accepted", "rejected", "closed", "forfeited"],
+    enum: ["pending", "reviewing", "qualified", "accepted", "rejected", "closed", "forfeited"],
   }).notNull().default("pending"),
   // Payment lifecycle — admin manages payouts
   paymentStatus: text("payment_status", {
@@ -103,6 +105,7 @@ export const submissions = pgTable("submissions", {
   stripePaymentIntentId: text("stripe_payment_intent_id"),
   stripeTransferId: text("stripe_transfer_id"),
   paymentDeadline: timestamp("payment_deadline"),
+  qualifiedDeadline: timestamp("qualified_deadline"), // deadline to mark lead as qualified after accept
   // E-sig
   disclosureSigned: boolean("disclosure_signed").notNull().default(false),
   disclosureSignedAt: timestamp("disclosure_signed_at"),

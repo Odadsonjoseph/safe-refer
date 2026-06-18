@@ -64,7 +64,7 @@ export default function PaymentsPage() {
 
   const allSubs: any[] = (posterSubmissions.data as any)?.submissions ?? [];
   const awaitingDeposit = allSubs.filter(
-    (s) => s.status === "accepted" && (!s.paymentStatus || s.paymentStatus === "unpaid")
+    (s) => s.status === "qualified" && (!s.paymentStatus || s.paymentStatus === "unpaid")
   );
   const awaitingFinal = allSubs.filter(
     (s) => s.status === "closed" && s.paymentStatus === "deposit_paid"
@@ -111,7 +111,7 @@ export default function PaymentsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Payments</h1>
           <p className="text-slate-500 text-sm mt-1">
-            Escrow-backed referral payouts — deposit on acceptance, balance on close
+            Escrow-backed referral payouts — 25% deposit when you qualify a lead, 75% balance when you close
           </p>
         </div>
 
@@ -210,7 +210,7 @@ export default function PaymentsPage() {
             </div>
             <div className="flex items-center gap-2 sm:ml-auto whitespace-nowrap">
               <CreditCard size={14} className="text-sky-500 flex-shrink-0" />
-              <span><strong>25%</strong> on accept · <strong>75%</strong> on close · <strong>48h</strong> to pay or deposit forfeits</span>
+              <span><strong>25%</strong> on qualify · <strong>75%</strong> on close · <strong>48h</strong> to pay or deposit forfeits</span>
             </div>
           </div>
         )}
@@ -219,7 +219,7 @@ export default function PaymentsPage() {
         {isPosterOrAdmin && (
           <SubmissionPaySection
             title="Step 1 — Pay Deposit (25%)"
-            subtitle="Accept a lead by paying 25% upfront into escrow. Referrer earns this if you don't close."
+            subtitle="Qualify a lead by paying 25% into escrow. This unlocks the contact info. Affiliate earns this if you don't close."
             icon={<DollarSign size={16} className="text-sky-500" />}
             submissions={awaitingDeposit}
             loading={posterSubmissions.isLoading}

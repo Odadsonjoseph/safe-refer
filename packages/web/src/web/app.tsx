@@ -18,6 +18,7 @@ import Admin from "./pages/admin";
 import Referrals from "./pages/referrals";
 import Learning from "./pages/learning";
 import Posts from "./pages/posts";
+import Settings from "./pages/settings";
 
 function LoadingSpinner() {
   return (
@@ -34,20 +35,16 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  // useAuth now merges the DB profile (role, applicationStatus, etc.) into user
   const { user, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
   if (!user) return <Redirect to="/sign-in" />;
 
-  // Admins always get through
   if (user.isAdmin) return adminOnly ? <Component /> : <Layout><Component /></Layout>;
 
   if (adminOnly) return <Redirect to="/dashboard" />;
 
-  // Redirect until onboarding is done
   if (user.applicationStatus === "incomplete") return <Redirect to="/onboarding" />;
-  // Business accounts pending approval go to waiting screen
   if (user.role === "business" && user.applicationStatus === "submitted") return <Redirect to="/pending" />;
   if (user.role === "business" && user.applicationStatus === "rejected") return <Redirect to="/pending" />;
 
@@ -83,6 +80,7 @@ function App() {
         <Route path="/admin" component={() => <ProtectedRoute component={Admin} adminOnly />} />
         <Route path="/posts" component={() => <ProtectedRoute component={Posts} />} />
         <Route path="/admin/:tab" component={() => <ProtectedRoute component={Admin} adminOnly />} />
+        <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
         <Route component={() => <Redirect to="/sign-in" />} />
       </Switch>
       {import.meta.env.DEV && <AgentFeedback />}
