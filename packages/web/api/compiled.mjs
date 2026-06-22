@@ -87688,6 +87688,21 @@ var auth_exports = {};
 __export(auth_exports, {
   getAuth: () => getAuth
 });
+import postgres2 from "postgres";
+function getAuthDb() {
+  if (!_authDb) {
+    const connStr = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL;
+    const client = postgres2(connStr, {
+      ssl: "require",
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 15,
+      prepare: false
+    });
+    _authDb = drizzle(client, { schema: { ...auth_schema_exports } });
+  }
+  return _authDb;
+}
 function generateReferralCode(name2, id) {
   const prefix = name2.replace(/[^a-zA-Z]/g, "").slice(0, 4).toUpperCase();
   const suffix = id.slice(-4).toUpperCase();
@@ -87696,10 +87711,11 @@ function generateReferralCode(name2, id) {
 function getAuth() {
   if (!_auth) {
     const db2 = getDb();
+    const authDb = getAuthDb();
     _auth = betterAuth({
       basePath: "/api/auth",
       baseURL: process.env.BETTER_AUTH_URL || process.env.WEBSITE_URL,
-      database: drizzleAdapter(db2, {
+      database: drizzleAdapter(authDb, {
         provider: "pg",
         schema: { ...auth_schema_exports },
         usePlural: false
@@ -87777,15 +87793,17 @@ function getAuth() {
   }
   return _auth;
 }
-var _auth;
+var _authDb, _auth;
 var init_auth = __esm({
   "src/api/auth.ts"() {
     init_dist8();
     init_drizzle_adapter2();
     init_plugins();
+    init_postgres_js();
     init_schema2();
     init_auth_schema();
     init_database();
+    _authDb = null;
     _auth = null;
   }
 });

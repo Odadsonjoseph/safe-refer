@@ -1,9 +1,29 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { bearer, magicLink } from "better-auth/plugins";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "./database/schema";
 import * as authSchema from "./database/auth-schema";
 import { getDb } from "./database";
+
+// Better-auth needs a direct DB connection (no pgbouncer) to avoid timeouts
+let _authDb: ReturnType<typeof drizzle> | null = null;
+function getAuthDb() {
+  if (!_authDb) {
+    // Prefer DIRECT_DATABASE_URL (no pgbouncer); fall back to DATABASE_URL
+    const connStr = process.env.DIRECT_DATABASE_URL || process.env.DATABASE_URL!;
+    const client = postgres(connStr, {
+      ssl: "require",
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 15,
+      prepare: false,
+    });
+    _authDb = drizzle(client, { schema: { ...authSchema } });
+  }
+  return _authDb;
+}
 
 type Auth = ReturnType<typeof betterAuth>;
 
@@ -18,11 +38,12 @@ function generateReferralCode(name: string, id: string): string {
 export function getAuth(): Auth {
   if (!_auth) {
     const db = getDb();
+    const authDb = getAuthDb();
 
     _auth = betterAuth({
       basePath: "/api/auth",
       baseURL: process.env.BETTER_AUTH_URL || process.env.WEBSITE_URL,
-      database: drizzleAdapter(db, {
+      database: drizzleAdapter(authDb, {
         provider: "pg",
         schema: { ...authSchema },
         usePlural: false,
